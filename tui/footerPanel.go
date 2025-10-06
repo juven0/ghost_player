@@ -6,8 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
+
+type endMsg struct{}
 
 type footer struct {
 	spinner  spinner.Model
@@ -16,7 +17,7 @@ type footer struct {
 	height   int
 }
 
-func NewFooter() footer {
+func newFooter() footer {
 	return footer{
 		progress: progress.New(progress.WithDefaultGradient()),
 	}
@@ -33,11 +34,21 @@ func (m footer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m footer) View() string {
 	playButton := styles.ActiveButtonStyle.Padding(0, 1).Margin(0).Render(styles.IconPlay)
 
-	progressBar := m.progress.View()
-	content := styles.TrackProgressStyle.Width(m.width).Render(progressBar)
-	content = lipgloss.JoinHorizontal(lipgloss.Top, playButton, content)
+	// progressBar := m.progress.View()
+	// content := styles.TrackProgressStyle.Width(m.width).Render(progressBar)
+	// content = lipgloss.JoinHorizontal(lipgloss.Top, playButton, content)
 
-	return styles.TrackBoxStyle.Width(m.width).Render(content)
+	style := panelStyle.
+		Padding(0, 1).
+		Width(m.width).
+		Height(m.height)
+	return style.
+		Render(
+			playButton,
+			styles.TrackProgressStyle.Width(m.width).Render(m.progress.View()),
+		)
+
+	// return styles.TrackBoxStyle.Width(m.width).Render(content)
 }
 
 func (m *footer) SetSize(w, h int) {
@@ -49,4 +60,8 @@ func (m *footer) SetSize(w, h int) {
 	if progressWidth > 0 {
 		m.progress.Width = progressWidth
 	}
+}
+
+func endCmd() tea.Msg {
+	return endMsg{}
 }

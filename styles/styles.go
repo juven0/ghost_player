@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	AccentColor       = lipgloss.Color("#FFE0B2")
+	AccentColor       = lipgloss.Color("#ba299aff")
 	BackgroundColor   = lipgloss.Color("#6b6b6b")
 	ActiveTextColor   = lipgloss.Color("#EEE")
 	NormalTextColor   = lipgloss.Color("#CCC")
@@ -29,10 +29,10 @@ var (
 			BorderForeground(lipgloss.Color(AccentColor))
 	TrackListStyle = lipgloss.NewStyle().
 			Padding(1, 2).
-			MarginTop(-2)
+			MarginTop(0)
 	TrackListActiveStyle = lipgloss.NewStyle().
 				Padding(0, 1).
-				MarginTop(-2).
+				MarginTop(0).
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(AccentColor)
 	TrackTitleStyle = lipgloss.NewStyle().
@@ -55,7 +55,7 @@ var (
 	TrackBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#444")).
-			Padding(1, 2)
+			Padding(0, 1)
 	TrackVersionStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#999999"))
 	TrackArtistStyle = lipgloss.NewStyle().

@@ -8,10 +8,11 @@ import (
 )
 
 type Model struct {
-	footer  footer
-	sidbare plateformModel
-	width   int
-	height  int
+	footer      footer
+	sidbare     plateformModel
+	width       int
+	height      int
+	renderCount int
 }
 
 var (
@@ -24,19 +25,24 @@ var (
 
 	mutedTextStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
+	listTitleStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("62")).
+			Foreground(lipgloss.Color("230")).
+			Padding(0, 1)
+	mutedListTitleStyle = listTitleStyle.
+				Background(mutedColor)
 )
 
 var (
 	sidebarWidth = 25
-	footerHeight = 5
+	footerHeight = 2
 )
 
 func NewModel() Model {
 	m := Model{
-		footer:  NewFooter(),
+		footer:  newFooter(),
 		sidbare: newPlateformeList(),
 	}
-	// Initialiser avec une taille par défaut
 	m.width = 80
 	m.height = 24
 	m.updateSizes()
@@ -48,11 +54,15 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m.renderCount++
+	var cmdList tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+		case tea.KeyLeft, tea.KeyRight:
+			m.togglePanel()
 		}
 
 	case tea.WindowSizeMsg:
@@ -60,23 +70,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.updateSizes()
 	}
-
-	return m, nil
+	m.sidbare, cmdList = m.sidbare.Update(msg)
+	return m, tea.Batch(cmdList)
 }
 
-func (m Model) updateSizes() {
-	m.footer.SetSize(m.width, footerHeight)
+func (m *Model) updateSizes() {
+	// contentWidth := m.width - sidebarWidth - 4
+	contentHeight := m.height - footerHeight - 12
+	m.footer.SetSize(m.width-2, footerHeight)
+	m.sidbare.SetSize(sidebarWidth, contentHeight)
 }
 
 func (m Model) View() string {
 	bodyHeight := m.height - footerHeight
 
 	body := styles.TrackBoxStyle.
-		Width(m.width).
-		Height(bodyHeight - 10).
+		Width(m.width - 2).
+		Height(bodyHeight - 50).
 		Render(m.sidbare.View())
 
 	footer := m.footer.View()
 
 	return lipgloss.JoinVertical(lipgloss.Left, body, footer)
+}
+
+func (m *Model) togglePanel() {
+	m.sidbare.Focus()
 }

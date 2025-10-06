@@ -11,6 +11,8 @@ type plateformItem struct {
 	name string
 }
 
+type plateformeSeletedMsg plateformItem
+
 func (p plateformItem) FilterValue() string {
 	return p.name
 }
@@ -29,7 +31,7 @@ type plateformModel struct {
 }
 
 func newPlateformeList() plateformModel {
-	l := list.New(plateformsToListItem(plateforms), list.NewDefaultDelegate(), 0, 0)
+	l := list.New(plateformsToListItem(plateforms), newSimpleListDelegate(false), 0, 0)
 	l.Title = "Plateforme"
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
@@ -41,7 +43,7 @@ func newPlateformeList() plateformModel {
 
 func (m plateformModel) Init() tea.Cmd {
 	return func() tea.Msg {
-		return m.list.Items()[0]
+		return plateformeSeletedMsg(plateformItem(m.list.Items()[0].(plateformItem)))
 	}
 }
 
@@ -51,9 +53,9 @@ func (m plateformModel) Update(msg tea.Msg) (plateformModel, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			item := m.list.SelectedItem()
+			item := m.list.SelectedItem().(plateformItem)
 			m.list.FilterInput.SetValue("")
-			return m, func() tea.Msg { return item }
+			return m, func() tea.Msg { return plateformeSeletedMsg(item) }
 		}
 	}
 	m.list, cmd = m.list.Update(msg)
@@ -75,6 +77,22 @@ func (m *plateformModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 	m.list.SetSize(width, height)
+}
+
+func (m *plateformModel) Focus() {
+	m.list.SetDelegate(newSimpleListDelegate(true))
+	m.list.Styles.Title = listTitleStyle
+	m.focused = true
+}
+
+func (m *plateformModel) Blur() {
+	m.list.SetDelegate(newSimpleListDelegate(false))
+	m.list.Styles.Title = mutedListTitleStyle
+	m.focused = false
+}
+
+func (m plateformModel) Focused() bool {
+	return m.focused
 }
 
 func plateformsToListItem(sitems []plateformItem) []list.Item {
