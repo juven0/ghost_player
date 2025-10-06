@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"player/styles"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -59,7 +61,7 @@ func (m plateformModel) Update(msg tea.Msg) (plateformModel, tea.Cmd) {
 }
 
 func (m plateformModel) View() string {
-	style := panelStyle
+	style := styles.FocusedStyle
 	if !m.focused {
 		style = mutedPanelStyle
 	}

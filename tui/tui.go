@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"player/styles"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -26,14 +28,19 @@ var (
 
 var (
 	sidebarWidth = 25
-	footerHeight = 2
+	footerHeight = 5
 )
 
 func NewModel() Model {
-	return Model{
+	m := Model{
 		footer:  NewFooter(),
 		sidbare: newPlateformeList(),
 	}
+	// Initialiser avec une taille par défaut
+	m.width = 80
+	m.height = 24
+	m.updateSizes()
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -62,24 +69,14 @@ func (m Model) updateSizes() {
 }
 
 func (m Model) View() string {
-	body := m.sidbare.View()
+	bodyHeight := m.height - footerHeight
+
+	body := styles.TrackBoxStyle.
+		Width(m.width).
+		Height(bodyHeight - 10).
+		Render(m.sidbare.View())
+
 	footer := m.footer.View()
 
-	return lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Top,
-		lipgloss.Left,
-		lipgloss.JoinVertical(
-			lipgloss.Top,
-			body,
-			lipgloss.Place(
-				m.width,
-				footerHeight,
-				lipgloss.Bottom,
-				lipgloss.Left,
-				footer,
-			),
-		),
-	)
+	return lipgloss.JoinVertical(lipgloss.Left, body, footer)
 }

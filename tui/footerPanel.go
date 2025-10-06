@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"player/styles"
+
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,22 +31,22 @@ func (m footer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m footer) View() string {
-	style := panelStyle.
-		Width(m.width).
-		Height(m.height).
-		Padding(0, 1)
+	playButton := styles.ActiveButtonStyle.Padding(0, 1).Margin(0).Render(styles.IconPlay)
 
-	content := mutedTextStyle.Render(" Ananas ") + "\n" + m.progress.ViewAs(0.25)
+	progressBar := m.progress.View()
+	content := styles.TrackProgressStyle.Width(m.width).Render(progressBar)
+	content = lipgloss.JoinHorizontal(lipgloss.Top, playButton, content)
 
-	return lipgloss.PlaceHorizontal(
-		m.width,
-		lipgloss.Left,
-		style.Render(content),
-	)
+	return styles.TrackBoxStyle.Width(m.width).Render(content)
 }
 
 func (m *footer) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	m.progress.Width = w - 4
+
+	progressWidth := w - 13
+
+	if progressWidth > 0 {
+		m.progress.Width = progressWidth
+	}
 }
