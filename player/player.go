@@ -18,6 +18,15 @@ type videoInfo struct {
 	URL      string `json:"url"`
 }
 
+type TrackItem struct {
+	name   string
+	artist string
+}
+
+func (t TrackItem) Title() string       { return t.name }
+func (t TrackItem) Description() string { return t.artist }
+func (t TrackItem) FilterValue() string { return t.name + " " + t.artist }
+
 func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	ctx := context.Background()
 
