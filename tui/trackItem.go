@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type trackItemModel struct {
@@ -77,4 +78,28 @@ func newTrackList() trackItemModel {
 		keys:         trakKey,
 		delegateKeys: delegateKey,
 	}
+}
+
+func (m trackItemModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := styles.AppStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+	case tea.KeyMsg:
+		if m.list.FilterState() == list.Filtering {
+			break
+		}
+	}
+	newListModel, cmd := m.list.Update(msg)
+	m.list = newListModel
+
+	return m, cmd
+}
+
+func (m trackItemModel) View() string {
+	return styles.AppStyle.Render(m.list.View())
 }

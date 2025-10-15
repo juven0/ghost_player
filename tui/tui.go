@@ -10,6 +10,7 @@ import (
 type Model struct {
 	footer      footer
 	sidbare     plateformModel
+	trackList   trackItemModel
 	width       int
 	height      int
 	renderCount int
@@ -40,8 +41,9 @@ var (
 
 func NewModel() Model {
 	m := Model{
-		footer:  newFooter(),
-		sidbare: newPlateformeList(),
+		footer:    newFooter(),
+		sidbare:   newPlateformeList(),
+		trackList: newTrackList(),
 	}
 	m.width = 80
 	m.height = 24
@@ -84,10 +86,10 @@ func (m *Model) updateSizes() {
 func (m Model) View() string {
 	bodyHeight := m.height - footerHeight
 
-	body := styles.TrackBoxStyle.
-		Width(m.width - 2).
-		Height(bodyHeight - 50).
-		Render(m.sidbare.View())
+	body := lipgloss.JoinHorizontal(lipgloss.Left, styles.TrackBoxStyle.
+		Width(m.width-2).
+		Height(bodyHeight-50).
+		Render(m.sidbare.View()), m.trackList.View())
 
 	footer := m.footer.View()
 
