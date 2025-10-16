@@ -77,19 +77,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) updateSizes() {
-	// contentWidth := m.width - sidebarWidth - 4
+	contentWidth := m.width - sidebarWidth - 4
 	contentHeight := m.height - footerHeight - 12
 	m.footer.SetSize(m.width-2, footerHeight)
 	m.sidbare.SetSize(sidebarWidth, contentHeight)
+	m.trackList.SetSize(contentWidth, contentHeight+6)
 }
 
 func (m Model) View() string {
 	bodyHeight := m.height - footerHeight
 
-	body := lipgloss.JoinHorizontal(lipgloss.Left, styles.TrackBoxStyle.
-		Width(m.width-2).
-		Height(bodyHeight-50).
-		Render(m.sidbare.View()), m.trackList.View())
+	body := styles.TrackBoxStyle.
+		Width(m.width - 2).
+		Height(bodyHeight - 50).
+		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidbare.View(), m.trackList.View()))
 
 	footer := m.footer.View()
 

@@ -100,6 +100,12 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 	return m, cmd
 }
 
+func (m *trackItemModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
+	m.list.SetSize(width, height)
+}
+
 func (m trackItemModel) View() string {
 	return styles.AppStyle.Render(m.list.View())
 }
