@@ -1,9 +1,11 @@
 package player
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -56,16 +58,33 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 		return []videoInfo{}, fmt.Errorf("search failed: %w", err)
 	}
 
-	var data struct {
-		Entries []videoInfo `json:"entries"`
+	var videos []videoInfo
+	scanner := bufio.NewScanner(strings.NewReader(result.Stdout))
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		var video videoInfo
+		if err := json.Unmarshal([]byte(line), &video); err != nil {
+			continue
+		}
+
+		videos = append(videos, video)
 	}
 
-	err = json.Unmarshal([]byte(result.Stdout), &data)
-	if err != nil {
-		return []videoInfo{}, fmt.Errorf("error parse results: %w", err)
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading output: %w", err)
 	}
 
-	return data.Entries, nil
+	if len(videos) == 0 {
+		return nil, fmt.Errorf("no videos found")
+	}
+
+	return videos, nil
 }
 
 func VideoToListeItem(videos []videoInfo) []list.Item {

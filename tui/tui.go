@@ -52,10 +52,10 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	// return tea.Batch(
-	// 	m.trackList.Init(),
-	// )
-	return  nil
+	return tea.Batch(
+		m.trackList.Init(),
+	)
+	// return  nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
