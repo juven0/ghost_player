@@ -76,7 +76,7 @@ func (m plateformModel) View() string {
 func (m *plateformModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	m.list.SetSize(width, height)
+	m.list.SetSize(width, height-6)
 }
 
 func (m *plateformModel) Focus() {

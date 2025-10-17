@@ -2,7 +2,6 @@ package tui
 
 import (
 	"player/player"
-	"player/styles"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -13,10 +12,10 @@ func newTrackDelegate(keys *delegateKeyMap) list.ItemDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var title string
+		var item player.TrackItem
 
 		if i, ok := m.SelectedItem().(player.TrackItem); ok {
-			title = i.Title()
+			item = i
 		} else {
 			return nil
 		}
@@ -25,7 +24,7 @@ func newTrackDelegate(keys *delegateKeyMap) list.ItemDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.choose):
-				return m.NewStatusMessage(styles.StatusMessageStyle("you chose " + title))
+				return player.PlayCmd(item.Video.URL)
 			}
 		}
 		return nil

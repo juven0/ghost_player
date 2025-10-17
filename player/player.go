@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -47,6 +48,16 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
+func PlayCmd(url string) tea.Cmd {
+	return func() tea.Msg {
+		err := PlayAudio(url)
+		if err != nil {
+			return nil
+		}
+		return nil
+	}
+}
+
 func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	ctx := context.Background()
 
@@ -63,7 +74,7 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
@@ -95,4 +106,22 @@ func VideoToListeItem(videos []videoInfo) []list.Item {
 		}
 	}
 	return items
+}
+
+func getStreamURL(url string) (string, error) {
+	cmd := exec.Command("yt-dlp", "-g", "-f", "bestaudio", url)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
+}
+
+func PlayAudio(url string) error {
+	streamURL, err := getStreamURL(url)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("ffplay", "-nodisp", "-autoexit", streamURL)
+	return cmd.Run()
 }

@@ -15,13 +15,10 @@ func TestSearchYoutube(t *testing.T) {
 	maxResults := 5
 
 	results, err := SearchYoutube(query, maxResults)
-
-	// Vérifier qu'il n'y a pas d'erreur
 	if err != nil {
 		t.Fatalf("SearchYoutube() error = %v", err)
 	}
 
-	// Vérifier qu'on a des résultats
 	if len(results) == 0 {
 		t.Fatal("SearchYoutube() returned no results")
 	}
@@ -47,3 +44,4 @@ func TestSearchYoutube(t *testing.T) {
 		t.Logf("Result %d: %s (ID: %s)", i+1, video.Title, video.ID)
 	}
 }
+

@@ -8,19 +8,23 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type trackItemModel struct {
 	list         list.Model
+	input        textinput.Model
 	width        int
 	height       int
 	msg          string
 	keys         *trackKeyMap
 	delegateKeys *delegateKeyMap
+	isSearch     bool
 }
 
 type trackKeyMap struct {
+	search           key.Binding
 	toggleSpinner    key.Binding
 	toggleTitleBar   key.Binding
 	toggleStatusBar  key.Binding
@@ -30,6 +34,10 @@ type trackKeyMap struct {
 
 func newListeKeyMap() *trackKeyMap {
 	return &trackKeyMap{
+		search: key.NewBinding(
+			key.WithKeys("S"),
+			key.WithHelp("S", "search in plateforme"),
+		),
 		toggleSpinner: key.NewBinding(
 			key.WithKeys("s"),
 			key.WithHelp("s", "toggle spinner"),
@@ -59,7 +67,8 @@ func newTrackList() trackItemModel {
 		trakKey     = newListeKeyMap()
 	)
 
-	const numItem = 10
+	ti := textinput.New()
+	const numItem = 2
 	traks := make([]list.Item, numItem)
 
 	delegate := newTrackDelegate(delegateKey)
@@ -68,6 +77,7 @@ func newTrackList() trackItemModel {
 	tracks.Styles.Title = styles.TitleStyle
 	tracks.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
+			trakKey.search,
 			trakKey.toggleSpinner,
 			trakKey.toggleStatusBar,
 			trakKey.toggleTitleBar,
@@ -78,16 +88,20 @@ func newTrackList() trackItemModel {
 
 	return trackItemModel{
 		list:         tracks,
+		input:        ti,
 		keys:         trakKey,
 		delegateKeys: delegateKey,
+		isSearch:     false,
 	}
 }
 
 func (m trackItemModel) Init() tea.Cmd {
-	return player.SearchYTCmd("shenseea", 10)
+	return player.SearchYTCmd("shenseea", 3)
 }
 
 func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := styles.AppStyle.GetFrameSize()
@@ -95,6 +109,31 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.list.FilterState() == list.Filtering {
 			break
+		}
+
+		if m.isSearch {
+			switch msg.Type {
+			case tea.KeyEnter:
+				query := m.input.Value()
+				if query != "" {
+					m.isSearch = false
+					m.msg = "🔍 Recherche en cours..."
+					m.input.SetValue("")
+					return m, player.SearchYTCmd(query, 10)
+				}
+			case tea.KeyEsc:
+				m.isSearch = false
+				m.input.SetValue("")
+				return m, nil
+			}
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
+		switch {
+		case key.Matches(msg, m.keys.search):
+			m.isSearch = true
+			m.input.Focus()
+			return m, textinput.Blink
 		}
 	case player.SearchCompleteMsg:
 		if msg.Err != nil {
@@ -117,9 +156,24 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 func (m *trackItemModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	m.list.SetSize(width, height)
+	m.list.SetSize(width, 5)
 }
 
 func (m trackItemModel) View() string {
-	return styles.AppStyle.Render(m.list.View())
+	var view string
+
+	if m.isSearch {
+		view = "🔍 Rechercher sur YouTube:\n\n"
+		view += m.input.View()
+		view += "\n\n(Enter pour rechercher, Esc pour annuler)"
+		return styles.AppStyle.Render(view)
+	}
+
+	view = m.list.View()
+
+	if m.msg != "" {
+		view += "\n" + styles.AccentTextStyle.Render(m.msg)
+	}
+
+	return styles.AppStyle.Render(view)
 }

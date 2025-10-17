@@ -55,7 +55,6 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.trackList.Init(),
 	)
-	// return  nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -91,10 +90,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) updateSizes() {
 	contentWidth := m.width - sidebarWidth - 4
-	contentHeight := m.height - footerHeight - 12
+	contentHeight := m.height - footerHeight - 6
 	m.footer.SetSize(m.width-2, footerHeight)
 	m.sidbare.SetSize(sidebarWidth, contentHeight)
-	m.trackList.SetSize(contentWidth, contentHeight-10)
+	m.trackList.SetSize(contentWidth, contentHeight)
 }
 
 func (m Model) View() string {
@@ -102,7 +101,7 @@ func (m Model) View() string {
 
 	body := styles.TrackBoxStyle.
 		Width(m.width - 2).
-		Height(bodyHeight - 50).
+		Height(bodyHeight - 10).
 		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidbare.View(), m.trackList.View()))
 
 	footer := m.footer.View()
@@ -111,5 +110,4 @@ func (m Model) View() string {
 }
 
 func (m *Model) togglePanel() {
-	m.sidbare.Focus()
 }
