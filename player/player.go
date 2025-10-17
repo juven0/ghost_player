@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lrstanley/go-ytdlp"
 )
 
@@ -13,19 +15,35 @@ type Player struct {
 }
 
 type videoInfo struct {
-	Title    string `json:"title"`
-	Duration string `json:"duration"`
-	URL      string `json:"url"`
+	ID       string  `json:"id"`
+	Title    string  `json:"title"`
+	Duration float64 `json:"duration"`
+	Uploader string  `json:"uploader"`
+	URL      string  `json:"url"`
 }
 
 type TrackItem struct {
-	name   string
-	artist string
+	Video videoInfo
 }
 
-func (t TrackItem) Title() string       { return t.name }
-func (t TrackItem) Description() string { return t.artist }
-func (t TrackItem) FilterValue() string { return t.name + " " + t.artist }
+func (t TrackItem) Title() string       { return t.Video.Title }
+func (t TrackItem) Description() string { return t.Video.Uploader }
+func (t TrackItem) FilterValue() string { return t.Video.Title }
+
+type SearchCompleteMsg struct {
+	Results []videoInfo
+	Err     error
+}
+
+func SearchYTCmd(query string, maxRes int) tea.Cmd {
+	return func() tea.Msg {
+		results, err := SearchYoutube(query, maxRes)
+		return SearchCompleteMsg{
+			results,
+			err,
+		}
+	}
+}
 
 func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	ctx := context.Background()
@@ -48,4 +66,14 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	}
 
 	return data.Entries, nil
+}
+
+func VideoToListeItem(videos []videoInfo) []list.Item {
+	items := make([]list.Item, len(videos))
+	for i, video := range videos {
+		items[i] = TrackItem{
+			Video: video,
+		}
+	}
+	return items
 }

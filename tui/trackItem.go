@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"fmt"
+
+	"player/player"
 	"player/styles"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -81,7 +84,7 @@ func newTrackList() trackItemModel {
 }
 
 func (m trackItemModel) Init() tea.Cmd {
-	return nil
+	return player.SearchYTCmd("shenseea", 10)
 }
 
 func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
@@ -93,6 +96,17 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
+	case player.SearchCompleteMsg:
+		if msg.Err != nil {
+			m.msg = fmt.Sprintf("Erreur: %v", msg.Err)
+			return m, nil
+		}
+
+		items := player.VideoToListeItem(msg.Results)
+		m.list.SetItems(items)
+		m.msg = fmt.Sprintf("%d résultats trouvés", len(items))
+
+		return m, nil
 	}
 	newListModel, cmd := m.list.Update(msg)
 	m.list = newListModel

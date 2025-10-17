@@ -52,12 +52,15 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	// return tea.Batch(
+	// 	m.trackList.Init(),
+	// )
+	return  nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.renderCount++
-	var cmdList tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -72,8 +75,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.updateSizes()
 	}
-	m.sidbare, cmdList = m.sidbare.Update(msg)
-	return m, tea.Batch(cmdList)
+	var cmdTrackList tea.Cmd
+	m.trackList, cmdTrackList = m.trackList.Update(msg)
+	if cmdTrackList != nil {
+		cmds = append(cmds, cmdTrackList)
+	}
+	var cmdSidbare tea.Cmd
+	m.sidbare, cmdSidbare = m.sidbare.Update(msg)
+	if cmdSidbare != nil {
+		cmds = append(cmds, cmdSidbare)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m *Model) updateSizes() {
@@ -81,7 +94,7 @@ func (m *Model) updateSizes() {
 	contentHeight := m.height - footerHeight - 12
 	m.footer.SetSize(m.width-2, footerHeight)
 	m.sidbare.SetSize(sidebarWidth, contentHeight)
-	m.trackList.SetSize(contentWidth, contentHeight+6)
+	m.trackList.SetSize(contentWidth, contentHeight-10)
 }
 
 func (m Model) View() string {
