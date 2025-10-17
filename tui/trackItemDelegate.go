@@ -24,7 +24,10 @@ func newTrackDelegate(keys *delegateKeyMap) list.ItemDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.choose):
-				return player.PlayCmd(item.Video.URL)
+				return player.PlayCmd(item.Video)
+
+			case key.Matches(msg, keys.remove):
+				return player.StopCmd()
 			}
 		}
 		return nil

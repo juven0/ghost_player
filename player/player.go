@@ -14,7 +14,20 @@ import (
 )
 
 type Player struct {
-	ctx context.Context
+	cancel context.CancelFunc
+	cmd    *exec.Cmd
+}
+type PlayStoppedMsg struct{}
+
+var currentPlayer *Player
+
+type PlayStartedMsg struct {
+	VideoID string
+	Title   string
+}
+
+type PlayErrorMsg struct {
+	Err error
 }
 
 type videoInfo struct {
@@ -48,14 +61,65 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
-func PlayCmd(url string) tea.Cmd {
+func PlayCmd(video videoInfo) tea.Cmd {
 	return func() tea.Msg {
-		err := PlayAudio(url)
-		if err != nil {
-			return nil
+		if currentPlayer != nil {
 		}
-		return nil
+
+		streamURL, err := getStreamURL(video.ID)
+		if err != nil {
+			return PlayErrorMsg{Err: err}
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+
+		cmd := exec.CommandContext(ctx, "mpv",
+			"--no-video",
+			"--really-quiet",
+			"--no-terminal",
+			"--keep-open=no",
+			streamURL,
+		)
+		currentPlayer = &Player{
+			cmd:    cmd,
+			cancel: cancel,
+		}
+
+		go func() {
+			if err := cmd.Run(); err != nil && ctx.Err() == nil {
+				fmt.Printf("Play error: %v\n", err)
+			}
+			currentPlayer = nil
+		}()
+
+		return PlayStartedMsg{
+			VideoID: video.ID,
+			Title:   video.Title,
+		}
 	}
+}
+
+func StopAudio() {
+	if currentPlayer != nil {
+		if currentPlayer.cancel != nil {
+			currentPlayer.cancel()
+		}
+		if currentPlayer.cmd != nil && currentPlayer.cmd.Process != nil {
+			currentPlayer.cmd.Process.Kill()
+		}
+		currentPlayer = nil
+	}
+}
+
+func StopCmd() tea.Cmd {
+	return func() tea.Msg {
+		StopAudio()
+		return PlayStoppedMsg{}
+	}
+}
+
+func IsPlaying() bool {
+	return currentPlayer != nil
 }
 
 func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
@@ -108,17 +172,29 @@ func VideoToListeItem(videos []videoInfo) []list.Item {
 	return items
 }
 
-func getStreamURL(url string) (string, error) {
-	cmd := exec.Command("yt-dlp", "-g", "-f", "bestaudio", url)
-	output, err := cmd.Output()
+func getStreamURL(mediaId string) (string, error) {
+	ctx := context.Background()
+	mediaURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", mediaId)
+
+	result, err := ytdlp.New().
+		Format("bestaudio").
+		GetURL().
+		NoWarnings().
+		Run(ctx, mediaURL)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get stream URL: %w", err)
 	}
-	return string(output), nil
+
+	streamURL := strings.TrimSpace(result.Stdout)
+	if streamURL == "" {
+		return "", fmt.Errorf("empty stream URL")
+	}
+
+	return streamURL, nil
 }
 
-func PlayAudio(url string) error {
-	streamURL, err := getStreamURL(url)
+func PlayAudio(mediaId string) error {
+	streamURL, err := getStreamURL(mediaId)
 	if err != nil {
 		return err
 	}

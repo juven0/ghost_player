@@ -21,6 +21,8 @@ type trackItemModel struct {
 	keys         *trackKeyMap
 	delegateKeys *delegateKeyMap
 	isSearch     bool
+	isPlaying    bool
+	currentTrack string
 }
 
 type trackKeyMap struct {
@@ -144,7 +146,23 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 		items := player.VideoToListeItem(msg.Results)
 		m.list.SetItems(items)
 		m.msg = fmt.Sprintf("%d résultats trouvés", len(items))
+		return m, nil
 
+	case player.PlayStartedMsg:
+		m.isPlaying = true
+		m.currentTrack = msg.Title
+		m.msg = fmt.Sprintf("▶️  Lecture: %s", msg.Title)
+		return m, nil
+
+	case player.PlayErrorMsg:
+		m.isPlaying = false
+		m.msg = fmt.Sprintf("❌ Erreur de lecture: %v", msg.Err)
+		return m, nil
+
+	case player.PlayStoppedMsg:
+		m.isPlaying = false
+		m.currentTrack = ""
+		m.msg = "⏹️  Lecture arrêtée"
 		return m, nil
 	}
 	newListModel, cmd := m.list.Update(msg)

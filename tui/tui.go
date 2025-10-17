@@ -102,7 +102,7 @@ func (m Model) View() string {
 	body := styles.TrackBoxStyle.
 		Width(m.width - 2).
 		Height(bodyHeight - 10).
-		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidbare.View(), m.trackList.View()))
+		Render(m.trackList.View())
 
 	footer := m.footer.View()
 
