@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -16,6 +17,12 @@ import (
 type Player struct {
 	cancel context.CancelFunc
 	cmd    *exec.Cmd
+}
+
+type playProgress struct {
+	CurrentTime string
+	TotalTime   string
+	percentage  int
 }
 type PlayStoppedMsg struct{}
 
@@ -51,6 +58,13 @@ type SearchCompleteMsg struct {
 	Err     error
 }
 
+func NewPlayer() *Player {
+	_, cancel := context.WithCancel(context.Background())
+	return &Player{
+		cancel: cancel,
+	}
+}
+
 func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	return func() tea.Msg {
 		results, err := SearchYoutube(query, maxRes)
@@ -76,7 +90,6 @@ func PlayCmd(video videoInfo) tea.Cmd {
 		cmd := exec.CommandContext(ctx, "mpv",
 			"--no-video",
 			"--really-quiet",
-			"--no-terminal",
 			"--keep-open=no",
 			streamURL,
 		)
@@ -85,11 +98,29 @@ func PlayCmd(video videoInfo) tea.Cmd {
 			cancel: cancel,
 		}
 
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return nil
+		}
+
+		progressRgx := regexp.MustCompile(`A:\s+\d{2}:(\d{2}:\d{2})\s+/\s+\d{2}:(\d{2}:\d{2})\s+\((\d+)%\)`)
+
 		go func() {
 			if err := cmd.Run(); err != nil && ctx.Err() == nil {
 				fmt.Printf("Play error: %v\n", err)
 			}
 			currentPlayer = nil
+		}()
+
+		go func() {
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				line := scanner.Text()
+				matches := progressRgx.FindStringSubmatch(line)
+				if len(matches) > 3 {
+					// progress := strconv.Itoa(matches[3])
+				}
+			}
 		}()
 
 		return PlayStartedMsg{
