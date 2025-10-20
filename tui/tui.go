@@ -91,18 +91,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) updateSizes() {
 	contentWidth := m.width - sidebarWidth - 4
 	contentHeight := m.height - footerHeight - 6
+	bodyHeight := m.height - footerHeight - 4
+
+	if bodyHeight < 15 {
+		bodyHeight = 15
+	}
 	m.footer.SetSize(m.width-2, footerHeight)
 	m.sidbare.SetSize(sidebarWidth, contentHeight)
-	m.trackList.SetSize(contentWidth, contentHeight)
+	m.trackList.SetSize(contentWidth, bodyHeight)
 }
 
 func (m Model) View() string {
-	bodyHeight := m.height - footerHeight
+	bodyHeight := m.height - footerHeight - 4
 
+	trackListView := m.trackList.View()
 	body := styles.TrackBoxStyle.
 		Width(m.width - 2).
-		Height(bodyHeight - 10).
-		Render(m.trackList.View())
+		Height(bodyHeight).
+		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidbare.View(), trackListView))
 
 	footer := m.footer.View()
 

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type trackItemModel struct {
@@ -98,7 +99,7 @@ func newTrackList() trackItemModel {
 }
 
 func (m trackItemModel) Init() tea.Cmd {
-	return player.SearchYTCmd("shenseea", 3)
+	return player.SearchYTCmd("shenseea", 5)
 }
 
 func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
@@ -174,7 +175,13 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 func (m *trackItemModel) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	m.list.SetSize(width, 5)
+	listHeight := height - 5
+
+	if listHeight < 10 {
+		listHeight = 10
+	}
+
+	m.list.SetSize(width, listHeight)
 }
 
 func (m trackItemModel) View() string {
@@ -184,10 +191,26 @@ func (m trackItemModel) View() string {
 		view = "🔍 Rechercher sur YouTube:\n\n"
 		view += m.input.View()
 		view += "\n\n(Enter pour rechercher, Esc pour annuler)"
-		return styles.AppStyle.Render(view)
+
+		if m.height > 0 {
+			view = lipgloss.NewStyle().
+				Height(m.height).
+				MaxHeight(m.height).
+				Render(view)
+		}
+		return view
 	}
 
-	view = m.list.View()
+	listView := m.list.View()
+
+	if m.height > 10 {
+		listView = styles.AppStyle.
+			Height(m.height - 2).
+			MaxHeight(m.height - 3).
+			Render(listView)
+	}
+
+	view = listView
 
 	if m.msg != "" {
 		view += "\n" + styles.AccentTextStyle.Render(m.msg)
