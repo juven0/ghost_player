@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"player/player"
 	"player/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,6 +15,7 @@ type Model struct {
 	width       int
 	height      int
 	renderCount int
+	player      *player.Player
 }
 
 var (
@@ -40,10 +42,12 @@ var (
 )
 
 func NewModel() Model {
+	p := player.NewPlayer()
 	m := Model{
-		footer:    newFooter(),
+		player:    p,
+		footer:    newFooter(p),
 		sidbare:   newPlateformeList(),
-		trackList: newTrackList(),
+		trackList: newTrackList(p),
 	}
 	m.width = 80
 	m.height = 24

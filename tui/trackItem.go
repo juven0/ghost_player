@@ -24,6 +24,7 @@ type trackItemModel struct {
 	isSearch     bool
 	isPlaying    bool
 	currentTrack string
+	player *player.Player
 }
 
 type trackKeyMap struct {
@@ -64,7 +65,7 @@ func newListeKeyMap() *trackKeyMap {
 	}
 }
 
-func newTrackList() trackItemModel {
+func newTrackList(p *player.Player) trackItemModel {
 	var (
 		delegateKey = newDelegateKeyMap()
 		trakKey     = newListeKeyMap()
@@ -74,7 +75,7 @@ func newTrackList() trackItemModel {
 	const numItem = 2
 	traks := make([]list.Item, numItem)
 
-	delegate := newTrackDelegate(delegateKey)
+	delegate := newTrackDelegate(delegateKey, p)
 	tracks := list.New(traks, delegate, 0, 0)
 	tracks.Title = "Songs"
 	tracks.Styles.Title = styles.TitleStyle

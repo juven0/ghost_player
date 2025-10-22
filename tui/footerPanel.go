@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"player/player"
 	"player/styles"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -11,23 +12,39 @@ import (
 type endMsg struct{}
 
 type footer struct {
+	player   *player.Player
 	spinner  spinner.Model
 	progress progress.Model
 	width    int
 	height   int
 }
 
-func newFooter() footer {
+func newFooter(p *player.Player) footer {
 	return footer{
+		player:   p,
 		progress: progress.New(progress.WithDefaultGradient()),
 	}
 }
 
 func (m footer) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		m.listenCmd,
+	)
 }
 
 func (m footer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case player.PlayerProgressMsg:
+		if msg.Progress == 100 {
+			return m, tea.Batch(
+				m.listenCmd,
+				endCmd,
+			)
+		}
+		return m, m.listenCmd
+	case player.PlayerMsg:
+		return m, m.listenCmd
+	}
 	return m, nil
 }
 
@@ -45,7 +62,7 @@ func (m footer) View() string {
 	return style.
 		Render(
 			playButton,
-			styles.TrackProgressStyle.Width(m.width).Render(m.progress.View()),
+			styles.TrackProgressStyle.Width(m.width).Render(m.progress.ViewAs(float64(m.player.Info().Progress)/100)),
 		)
 
 	// return styles.TrackBoxStyle.Width(m.width).Render(content)
@@ -64,4 +81,8 @@ func (m *footer) SetSize(w, h int) {
 
 func endCmd() tea.Msg {
 	return endMsg{}
+}
+
+func (m *footer) listenCmd() tea.Msg {
+	return <-m.player.Ch()
 }

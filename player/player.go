@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -17,12 +18,15 @@ import (
 type Player struct {
 	cancel context.CancelFunc
 	cmd    *exec.Cmd
+	ctx    context.Context
+	info   PlayerInfo
+	ch chan PlayerMsg
 }
 
-type playProgress struct {
-	CurrentTime string
-	TotalTime   string
-	percentage  int
+type PlayerInfo struct {
+	Current string
+	Total   string
+	Progress  int
 }
 type PlayStoppedMsg struct{}
 
@@ -57,11 +61,14 @@ type SearchCompleteMsg struct {
 	Results []videoInfo
 	Err     error
 }
+type PlayerMsg interface{}
+type PlayerProgressMsg PlayerInfo
 
 func NewPlayer() *Player {
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Player{
 		cancel: cancel,
+		ctx:    ctx,
 	}
 }
 
@@ -75,7 +82,7 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
-func PlayCmd(video videoInfo) tea.Cmd {
+func (p *Player)PlayCmd(video videoInfo) tea.Cmd {
 	return func() tea.Msg {
 		if currentPlayer != nil {
 		}
@@ -90,6 +97,7 @@ func PlayCmd(video videoInfo) tea.Cmd {
 		cmd := exec.CommandContext(ctx, "mpv",
 			"--no-video",
 			"--really-quiet",
+			"--term-status-msg=AV: ${time-pos} / ${duration} (${percent-pos}%)",
 			"--keep-open=no",
 			streamURL,
 		)
@@ -98,7 +106,7 @@ func PlayCmd(video videoInfo) tea.Cmd {
 			cancel: cancel,
 		}
 
-		stdout, err := cmd.StdoutPipe()
+		stdout, err := cmd.StderrPipe()
 		if err != nil {
 			return nil
 		}
@@ -118,7 +126,19 @@ func PlayCmd(video videoInfo) tea.Cmd {
 				line := scanner.Text()
 				matches := progressRgx.FindStringSubmatch(line)
 				if len(matches) > 3 {
-					// progress := strconv.Itoa(matches[3])
+					progress, _ := strconv.Atoi(matches[3])
+					// fmt.Printf("Play ao: %v\n", progress)
+					if progress != p.info.Progress && progress < 100 {
+					p.info = PlayerInfo{
+						Current:  matches[1],
+						Total: matches[2],
+						Progress: progress,
+					}
+					select {
+					case p.ch <- PlayerProgressMsg(p.info):
+					default:
+					}
+				}
 				}
 			}
 		}()
@@ -128,6 +148,14 @@ func PlayCmd(video videoInfo) tea.Cmd {
 			Title:   video.Title,
 		}
 	}
+}
+
+func (p *Player) Ch() chan PlayerMsg {
+	return p.ch
+}
+
+func (p *Player) Info() PlayerInfo {
+	return p.info
 }
 
 func StopAudio() {

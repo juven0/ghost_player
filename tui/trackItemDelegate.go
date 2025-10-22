@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func newTrackDelegate(keys *delegateKeyMap) list.ItemDelegate {
+func newTrackDelegate(keys *delegateKeyMap, p *player.Player) list.ItemDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
@@ -24,7 +24,7 @@ func newTrackDelegate(keys *delegateKeyMap) list.ItemDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.choose):
-				return player.PlayCmd(item.Video)
+				return p.PlayCmd(item.Video)
 
 			case key.Matches(msg, keys.remove):
 				return player.StopCmd()
