@@ -20,13 +20,13 @@ type Player struct {
 	cmd    *exec.Cmd
 	ctx    context.Context
 	info   PlayerInfo
-	ch chan PlayerMsg
+	ch     chan PlayerMsg
 }
 
 type PlayerInfo struct {
-	Current string
-	Total   string
-	Progress  int
+	Current  string
+	Total    string
+	Progress int
 }
 type PlayStoppedMsg struct{}
 
@@ -61,8 +61,10 @@ type SearchCompleteMsg struct {
 	Results []videoInfo
 	Err     error
 }
-type PlayerMsg interface{}
-type PlayerProgressMsg PlayerInfo
+type (
+	PlayerMsg         interface{}
+	PlayerProgressMsg PlayerInfo
+)
 
 func NewPlayer() *Player {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -82,7 +84,7 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
-func (p *Player)PlayCmd(video videoInfo) tea.Cmd {
+func (p *Player) PlayCmd(video videoInfo) tea.Cmd {
 	return func() tea.Msg {
 		if currentPlayer != nil {
 		}
@@ -97,10 +99,16 @@ func (p *Player)PlayCmd(video videoInfo) tea.Cmd {
 		cmd := exec.CommandContext(ctx, "mpv",
 			"--no-video",
 			"--really-quiet",
-			"--term-status-msg=AV: ${time-pos} / ${duration} (${percent-pos}%)",
 			"--keep-open=no",
 			streamURL,
 		)
+
+		//cmd := exec.Command("mpv",
+		//"--no-video",
+		//"--script-opts=ytdl_hook-ytdl_path=yt-dlp", // 👈 indique à mpv d'utiliser yt-dlp
+		//"--ytdl-format=bestaudio/best",
+		//streamURL,
+		//)
 		currentPlayer = &Player{
 			cmd:    cmd,
 			cancel: cancel,
@@ -122,23 +130,24 @@ func (p *Player)PlayCmd(video videoInfo) tea.Cmd {
 
 		go func() {
 			scanner := bufio.NewScanner(stdout)
+			fmt.Println(scanner.Scan())
 			for scanner.Scan() {
 				line := scanner.Text()
 				matches := progressRgx.FindStringSubmatch(line)
 				if len(matches) > 3 {
 					progress, _ := strconv.Atoi(matches[3])
-					// fmt.Printf("Play ao: %v\n", progress)
+					fmt.Printf("Play ao: %v\n", progress)
 					if progress != p.info.Progress && progress < 100 {
-					p.info = PlayerInfo{
-						Current:  matches[1],
-						Total: matches[2],
-						Progress: progress,
+						p.info = PlayerInfo{
+							Current:  matches[1],
+							Total:    matches[2],
+							Progress: progress,
+						}
+						select {
+						case p.ch <- PlayerProgressMsg(p.info):
+						default:
+						}
 					}
-					select {
-					case p.ch <- PlayerProgressMsg(p.info):
-					default:
-					}
-				}
 				}
 			}
 		}()
@@ -236,7 +245,7 @@ func getStreamURL(mediaId string) (string, error) {
 	mediaURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", mediaId)
 
 	result, err := ytdlp.New().
-		Format("bestaudio").
+		Format("bestaudio/best").
 		GetURL().
 		NoWarnings().
 		Run(ctx, mediaURL)

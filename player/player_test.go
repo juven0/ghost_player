@@ -44,4 +44,3 @@ func TestSearchYoutube(t *testing.T) {
 		t.Logf("Result %d: %s (ID: %s)", i+1, video.Title, video.ID)
 	}
 }
-
