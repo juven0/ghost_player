@@ -12,11 +12,12 @@ import (
 type endMsg struct{}
 
 type footer struct {
-	player   *player.Player
-	spinner  spinner.Model
-	progress progress.Model
-	width    int
-	height   int
+	player        *player.Player
+	spinner       spinner.Model
+	progress      progress.Model
+	width         int
+	height        int
+	progressValue float64
 }
 
 func newFooter(p *player.Player) footer {
@@ -35,6 +36,7 @@ func (m footer) Init() tea.Cmd {
 func (m footer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case player.PlayerProgressMsg:
+		m.progressValue = float64(msg.Progress) / 100
 		if msg.Progress == 100 {
 			return m, tea.Batch(
 				m.listenCmd,
@@ -62,9 +64,10 @@ func (m footer) View() string {
 	return style.
 		Render(
 			playButton,
-			styles.TrackProgressStyle.Width(m.width).Render(m.progress.ViewAs(float64(m.player.Info().Progress)/100)),
+			styles.TrackProgressStyle.Width(m.width).Render(
+				m.progress.ViewAs(m.progressValue),
+			),
 		)
-
 	// return styles.TrackBoxStyle.Width(m.width).Render(content)
 }
 

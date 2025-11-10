@@ -100,6 +100,7 @@ func (p *Player) PlayCmd(video videoInfo) tea.Cmd {
 			"--no-video",
 			"--really-quiet",
 			"--keep-open=no",
+			"--term-status-msg=A:%{=time-pos}/%{=duration} (%{percent-pos}%)",
 			streamURL,
 		)
 
@@ -112,14 +113,16 @@ func (p *Player) PlayCmd(video videoInfo) tea.Cmd {
 		currentPlayer = &Player{
 			cmd:    cmd,
 			cancel: cancel,
+			ctx:    ctx,
+			ch:     make(chan PlayerMsg, 10),
 		}
 
-		stdout, err := cmd.StderrPipe()
+		stderr, err := cmd.StderrPipe()
 		if err != nil {
-			return nil
+			return PlayErrorMsg{Err: err}
 		}
 
-		progressRgx := regexp.MustCompile(`A:\s+\d{2}:(\d{2}:\d{2})\s+/\s+\d{2}:(\d{2}:\d{2})\s+\((\d+)%\)`)
+		// progressRgx := regexp.MustCompile(`A:\s+\d{2}:(\d{2}:\d{2})\s+/\s+\d{2}:(\d{2}:\d{2})\s+\((\d+)%\)`)
 
 		go func() {
 			if err := cmd.Run(); err != nil && ctx.Err() == nil {
@@ -129,24 +132,25 @@ func (p *Player) PlayCmd(video videoInfo) tea.Cmd {
 		}()
 
 		go func() {
-			scanner := bufio.NewScanner(stdout)
-			fmt.Println(scanner.Scan())
+			scanner := bufio.NewScanner(stderr)
+			fmt.Println(scanner)
 			for scanner.Scan() {
 				line := scanner.Text()
-				matches := progressRgx.FindStringSubmatch(line)
-				if len(matches) > 3 {
+				matches := regexp.MustCompile(`A:(\d+\.\d+)/(\d+\.\d+) \((\d+)%\)`).FindStringSubmatch(line)
+				if len(matches) == 4 {
+					current := matches[1]
+					total := matches[2]
 					progress, _ := strconv.Atoi(matches[3])
-					fmt.Printf("Play ao: %v\n", progress)
-					if progress != p.info.Progress && progress < 100 {
-						p.info = PlayerInfo{
-							Current:  matches[1],
-							Total:    matches[2],
-							Progress: progress,
-						}
-						select {
-						case p.ch <- PlayerProgressMsg(p.info):
-						default:
-						}
+					fmt.Println(progress)
+					info := PlayerInfo{
+						Current:  current,
+						Total:    total,
+						Progress: progress,
+					}
+
+					select {
+					case currentPlayer.ch <- PlayerProgressMsg(info):
+					default:
 					}
 				}
 			}

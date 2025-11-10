@@ -24,7 +24,7 @@ type trackItemModel struct {
 	isSearch     bool
 	isPlaying    bool
 	currentTrack string
-	player *player.Player
+	player       *player.Player
 }
 
 type trackKeyMap struct {
