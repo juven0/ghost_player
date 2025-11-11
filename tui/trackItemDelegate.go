@@ -12,24 +12,6 @@ func newTrackDelegate(keys *delegateKeyMap, p *player.Player) list.ItemDelegate 
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var item player.TrackItem
-
-		if i, ok := m.SelectedItem().(player.TrackItem); ok {
-			item = i
-		} else {
-			return nil
-		}
-
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, keys.choose):
-				return p.PlayCmd(item.Video)
-
-			case key.Matches(msg, keys.remove):
-				return player.StopCmd()
-			}
-		}
 		return nil
 	}
 	help := []key.Binding{keys.choose, keys.remove}

@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,6 +17,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lrstanley/go-ytdlp"
 )
+const (
+	Loading = iota
+	Stopped = iota
+	Paused  = iota
+	Playing = iota
+)
 
 type Player struct {
 	cancel context.CancelFunc
@@ -21,14 +30,20 @@ type Player struct {
 	ctx    context.Context
 	info   PlayerInfo
 	ch     chan PlayerMsg
+	pipe    string
+	state   int
+	stream  string
 }
 
 type PlayerInfo struct {
+	Duration string
 	Current  string
-	Total    string
 	Progress int
 }
 type PlayStoppedMsg struct{}
+type PlayerErrorMsg error
+type PlayerStateChangedMsg string
+type PlayerOutputMsg string
 
 var currentPlayer *Player
 
@@ -50,12 +65,12 @@ type videoInfo struct {
 }
 
 type TrackItem struct {
-	Video videoInfo
+	Info videoInfo
 }
 
-func (t TrackItem) Title() string       { return t.Video.Title }
-func (t TrackItem) Description() string { return t.Video.Uploader }
-func (t TrackItem) FilterValue() string { return t.Video.Title }
+func (t TrackItem) Title() string       { return t.Info.Title }
+func (t TrackItem) Description() string { return t.Info.Uploader }
+func (t TrackItem) FilterValue() string { return t.Info.Title }
 
 type SearchCompleteMsg struct {
 	Results []videoInfo
@@ -71,6 +86,8 @@ func NewPlayer() *Player {
 	return &Player{
 		cancel: cancel,
 		ctx:    ctx,
+		ch:     make(chan PlayerMsg, 10),
+		state:  Stopped,
 	}
 }
 
@@ -84,83 +101,83 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
-func (p *Player) PlayCmd(video videoInfo) tea.Cmd {
-	return func() tea.Msg {
+func (p *Player) PlayCmd(video videoInfo) {
 		if currentPlayer != nil {
 		}
 
 		streamURL, err := getStreamURL(video.ID)
 		if err != nil {
-			return PlayErrorMsg{Err: err}
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		p.pipe = path.Join(os.TempDir(), "mpvsocket")
 
-		cmd := exec.CommandContext(ctx, "mpv",
-			"--no-video",
-			"--really-quiet",
-			"--keep-open=no",
-			"--term-status-msg=A:%{=time-pos}/%{=duration} (%{percent-pos}%)",
+		p.ctx, p.cancel = context.WithCancel(context.Background())
+
+		p.cmd = exec.CommandContext(p.ctx, "mpv",
 			streamURL,
+			"--no-video",
+			"--ytdl-format=bestaudio",
+			fmt.Sprintf("--input-ipc-server=%s", p.pipe),
+			"--quiet",
 		)
 
-		//cmd := exec.Command("mpv",
-		//"--no-video",
-		//"--script-opts=ytdl_hook-ytdl_path=yt-dlp", // 👈 indique à mpv d'utiliser yt-dlp
-		//"--ytdl-format=bestaudio/best",
-		//streamURL,
-		//)
-		currentPlayer = &Player{
-			cmd:    cmd,
-			cancel: cancel,
-			ctx:    ctx,
-			ch:     make(chan PlayerMsg, 10),
-		}
+			stdout, err := p.cmd.StdoutPipe()
+	if err != nil {
+		p.ch <- PlayerErrorMsg(fmt.Errorf("error creating stdout pipe: %v", err))
+		return
+	}
 
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			return PlayErrorMsg{Err: err}
-		}
+	progressRegex := regexp.MustCompile(`A:\s+\d{2}:(\d{2}:\d{2})\s+/\s+\d{2}:(\d{2}:\d{2})\s+\((\d+)%\)`)
 
-		// progressRgx := regexp.MustCompile(`A:\s+\d{2}:(\d{2}:\d{2})\s+/\s+\d{2}:(\d{2}:\d{2})\s+\((\d+)%\)`)
+	if err := p.cmd.Start(); err != nil {
+		p.ch <- PlayerErrorMsg(fmt.Errorf("Error starting command: %v\n", err))
+		return
+	}
 
-		go func() {
-			if err := cmd.Run(); err != nil && ctx.Err() == nil {
-				fmt.Printf("Play error: %v\n", err)
-			}
-			currentPlayer = nil
-		}()
+	p.setState(Loading)
 
-		go func() {
-			scanner := bufio.NewScanner(stderr)
-			fmt.Println(scanner)
-			for scanner.Scan() {
-				line := scanner.Text()
-				matches := regexp.MustCompile(`A:(\d+\.\d+)/(\d+\.\d+) \((\d+)%\)`).FindStringSubmatch(line)
-				if len(matches) == 4 {
-					current := matches[1]
-					total := matches[2]
-					progress, _ := strconv.Atoi(matches[3])
-					fmt.Println(progress)
-					info := PlayerInfo{
-						Current:  current,
-						Total:    total,
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			fmt.Println(line)
+			matches := progressRegex.FindStringSubmatch(line)
+			if len(matches) > 3 {
+				if p.state == Loading {
+					p.setState(Playing)
+				}
+				progress, _ := strconv.Atoi(matches[3])
+				if progress != p.info.Progress && progress < 100 {
+					p.info = PlayerInfo{
+						Current:  matches[1],
+						Duration: matches[2],
 						Progress: progress,
 					}
-
 					select {
-					case currentPlayer.ch <- PlayerProgressMsg(info):
+					case p.ch <- PlayerProgressMsg(p.info):
 					default:
 					}
 				}
+			} else {
+				p.ch <- PlayerOutputMsg(line)
 			}
-		}()
-
-		return PlayStartedMsg{
-			VideoID: video.ID,
-			Title:   video.Title,
 		}
-	}
+	}()
+
+	go func() {
+		defer os.Remove(p.pipe)
+		err := p.cmd.Wait()
+		if err != nil {
+			p.setState(Stopped)
+			return
+		}
+		p.info = PlayerInfo{
+			Progress: 100,
+			Current:  p.info.Duration,
+			Duration: p.info.Duration,
+		}
+		p.ch <- PlayerProgressMsg(p.info)
+	}()
 }
 
 func (p *Player) Ch() chan PlayerMsg {
@@ -238,7 +255,7 @@ func VideoToListeItem(videos []videoInfo) []list.Item {
 	items := make([]list.Item, len(videos))
 	for i, video := range videos {
 		items[i] = TrackItem{
-			Video: video,
+			Info: video,
 		}
 	}
 	return items
@@ -261,7 +278,6 @@ func getStreamURL(mediaId string) (string, error) {
 	if streamURL == "" {
 		return "", fmt.Errorf("empty stream URL")
 	}
-
 	return streamURL, nil
 }
 
@@ -272,4 +288,38 @@ func PlayAudio(mediaId string) error {
 	}
 	cmd := exec.Command("ffplay", "-nodisp", "-autoexit", streamURL)
 	return cmd.Run()
+}
+
+func (p *Player) setState(state int) {
+	if p.state == state {
+		return
+	}
+	p.state = state
+	p.ch <- PlayerStateChangedMsg(state)
+}
+
+func (p *Player) sendSocket(command string) error {
+	conn, err := net.Dial("unix", p.pipe)
+	if err != nil {
+		return fmt.Errorf("Error connecting to socket: %v\n", err)
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(command + "\n"))
+	if err != nil {
+		return fmt.Errorf("Error writing to socket: %v\n", err)
+	}
+	reader := bufio.NewReader(conn)
+	_, err = reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("Failed to read response: %v\n", err)
+	}
+	return nil
+}
+
+func (p *Player) VideoToListItem(videos []videoInfo) []list.Item {
+	items := make([]list.Item, len(videos))
+	for i, v := range videos {
+		items[i] = TrackItem{Info: v}
+	}
+	return items
 }

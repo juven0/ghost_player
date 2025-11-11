@@ -133,6 +133,14 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 			m.input, cmd = m.input.Update(msg)
 			return m, cmd
 		}
+		item := m.list.SelectedItem()
+		if item != nil {
+			
+			if ok {
+				m.player.PlayCmd(video.Info)
+				return m, cmd
+			}
+		}
 		switch {
 		case key.Matches(msg, m.keys.search):
 			m.isSearch = true
@@ -219,3 +227,4 @@ func (m trackItemModel) View() string {
 
 	return styles.AppStyle.Render(view)
 }
+
