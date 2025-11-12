@@ -95,6 +95,7 @@ func newTrackList(p *player.Player) trackItemModel {
 		input:        ti,
 		keys:         trakKey,
 		delegateKeys: delegateKey,
+		player: p,
 		isSearch:     false,
 	}
 }
@@ -133,13 +134,16 @@ func (m trackItemModel) Update(msg tea.Msg) (trackItemModel, tea.Cmd) {
 			m.input, cmd = m.input.Update(msg)
 			return m, cmd
 		}
-		item := m.list.SelectedItem()
-		if item != nil {
-			
-			if ok {
-				m.player.PlayCmd(video.Info)
-				return m, cmd
-			}
+		switch msg.Type{
+		case tea.KeyEnter:
+			item := m.list.SelectedItem()
+				if item != nil {
+					videoItem, ok := item.(player.TrackItem)
+					if ok {
+						m.player.PlayCmd(videoItem.Info)
+						return m, cmd
+					}
+				}
 		}
 		switch {
 		case key.Matches(msg, m.keys.search):

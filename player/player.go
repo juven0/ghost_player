@@ -56,7 +56,7 @@ type PlayErrorMsg struct {
 	Err error
 }
 
-type videoInfo struct {
+type VideoInfo struct {
 	ID       string  `json:"id"`
 	Title    string  `json:"title"`
 	Duration float64 `json:"duration"`
@@ -65,7 +65,7 @@ type videoInfo struct {
 }
 
 type TrackItem struct {
-	Info videoInfo
+	Info VideoInfo
 }
 
 func (t TrackItem) Title() string       { return t.Info.Title }
@@ -73,7 +73,7 @@ func (t TrackItem) Description() string { return t.Info.Uploader }
 func (t TrackItem) FilterValue() string { return t.Info.Title }
 
 type SearchCompleteMsg struct {
-	Results []videoInfo
+	Results []VideoInfo
 	Err     error
 }
 type (
@@ -101,9 +101,10 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 	}
 }
 
-func (p *Player) PlayCmd(video videoInfo) {
-		if currentPlayer != nil {
-		}
+func (p *Player) PlayCmd(video VideoInfo) {
+		if p.state != Stopped {
+				_ = p.Stop()
+			}
 
 		streamURL, err := getStreamURL(video.ID)
 		if err != nil {
@@ -140,7 +141,6 @@ func (p *Player) PlayCmd(video videoInfo) {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
-			fmt.Println(line)
 			matches := progressRegex.FindStringSubmatch(line)
 			if len(matches) > 3 {
 				if p.state == Loading {
@@ -188,21 +188,19 @@ func (p *Player) Info() PlayerInfo {
 	return p.info
 }
 
-func StopAudio() {
-	if currentPlayer != nil {
-		if currentPlayer.cancel != nil {
-			currentPlayer.cancel()
-		}
-		if currentPlayer.cmd != nil && currentPlayer.cmd.Process != nil {
-			currentPlayer.cmd.Process.Kill()
-		}
-		currentPlayer = nil
+func (p *Player) Stop() error {
+	if p.state == Stopped {
+		err := fmt.Errorf("Player already stopped")
+		p.ch <- PlayerErrorMsg(err)
+		return err
 	}
+	p.setState(Stopped)
+	p.cancel()
+	return nil
 }
 
 func StopCmd() tea.Cmd {
 	return func() tea.Msg {
-		StopAudio()
 		return PlayStoppedMsg{}
 	}
 }
@@ -211,7 +209,7 @@ func IsPlaying() bool {
 	return currentPlayer != nil
 }
 
-func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
+func SearchYoutube(query string, maxResult int) ([]VideoInfo, error) {
 	ctx := context.Background()
 
 	dl := ytdlp.New().FlatPlaylist().DumpJSON()
@@ -219,10 +217,10 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	searchQuery := fmt.Sprintf("ytsearch%d:%s", maxResult, query)
 	result, err := dl.Run(ctx, searchQuery)
 	if err != nil {
-		return []videoInfo{}, fmt.Errorf("search failed: %w", err)
+		return []VideoInfo{}, fmt.Errorf("search failed: %w", err)
 	}
 
-	var videos []videoInfo
+	var videos []VideoInfo
 	scanner := bufio.NewScanner(strings.NewReader(result.Stdout))
 
 	for scanner.Scan() {
@@ -232,7 +230,7 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 			continue
 		}
 
-		var video videoInfo
+		var video VideoInfo
 		if err := json.Unmarshal([]byte(line), &video); err != nil {
 			continue
 		}
@@ -251,7 +249,7 @@ func SearchYoutube(query string, maxResult int) ([]videoInfo, error) {
 	return videos, nil
 }
 
-func VideoToListeItem(videos []videoInfo) []list.Item {
+func VideoToListeItem(videos []VideoInfo) []list.Item {
 	items := make([]list.Item, len(videos))
 	for i, video := range videos {
 		items[i] = TrackItem{
@@ -281,15 +279,6 @@ func getStreamURL(mediaId string) (string, error) {
 	return streamURL, nil
 }
 
-func PlayAudio(mediaId string) error {
-	streamURL, err := getStreamURL(mediaId)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command("ffplay", "-nodisp", "-autoexit", streamURL)
-	return cmd.Run()
-}
-
 func (p *Player) setState(state int) {
 	if p.state == state {
 		return
@@ -314,12 +303,4 @@ func (p *Player) sendSocket(command string) error {
 		return fmt.Errorf("Failed to read response: %v\n", err)
 	}
 	return nil
-}
-
-func (p *Player) VideoToListItem(videos []videoInfo) []list.Item {
-	items := make([]list.Item, len(videos))
-	for i, v := range videos {
-		items[i] = TrackItem{Info: v}
-	}
-	return items
 }
