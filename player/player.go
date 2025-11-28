@@ -10,13 +10,16 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lrstanley/go-ytdlp"
 )
+
 const (
 	Loading = iota
 	Stopped = iota
@@ -30,9 +33,9 @@ type Player struct {
 	ctx    context.Context
 	info   PlayerInfo
 	ch     chan PlayerMsg
-	pipe    string
-	state   int
-	stream  string
+	pipe   string
+	state  int
+	stream string
 }
 
 type PlayerInfo struct {
@@ -40,10 +43,12 @@ type PlayerInfo struct {
 	Current  string
 	Progress int
 }
-type PlayStoppedMsg struct{}
-type PlayerErrorMsg error
-type PlayerStateChangedMsg string
-type PlayerOutputMsg string
+type (
+	PlayStoppedMsg        struct{}
+	PlayerErrorMsg        error
+	PlayerStateChangedMsg string
+	PlayerOutputMsg       string
+)
 
 var currentPlayer *Player
 
@@ -81,6 +86,14 @@ type (
 	PlayerProgressMsg PlayerInfo
 )
 
+func generatePipe() string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf(`\\.\pipe\mpvsocket_%d`, os.Getpid())
+	}
+
+	return fmt.Sprintf("/tmp/mpvsocket_%d", os.Getpid())
+}
+
 func NewPlayer() *Player {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Player{
@@ -88,6 +101,7 @@ func NewPlayer() *Player {
 		ctx:    ctx,
 		ch:     make(chan PlayerMsg, 10),
 		state:  Stopped,
+		pipe:   generatePipe(),
 	}
 }
 
@@ -102,27 +116,28 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 }
 
 func (p *Player) PlayCmd(video VideoInfo) {
-		if p.state != Stopped {
-				_ = p.Stop()
-			}
+	if p.state != Stopped {
+		_ = p.Stop()
+	}
 
-		streamURL, err := getStreamURL(video.ID)
-		if err != nil {
-		}
+	streamURL, err := getStreamURL(video.ID)
+	if err != nil {
+	}
 
-		p.pipe = path.Join(os.TempDir(), "mpvsocket")
+	p.pipe = path.Join(os.TempDir(), "mpvsocket")
 
-		p.ctx, p.cancel = context.WithCancel(context.Background())
+	p.ctx, p.cancel = context.WithCancel(context.Background())
 
-		p.cmd = exec.CommandContext(p.ctx, "mpv",
-			streamURL,
-			"--no-video",
-			"--ytdl-format=bestaudio",
-			fmt.Sprintf("--input-ipc-server=%s", p.pipe),
-			"--quiet",
-		)
+	p.cmd = exec.CommandContext(p.ctx, "mpv",
+		streamURL,
+		"--no-video",
+		"--ytdl-format=bestaudio",
+		fmt.Sprintf("--input-ipc-server=%s", p.pipe),
+		"--idle=yes",
+		"--keep-open=yes",
+	)
 
-			stdout, err := p.cmd.StdoutPipe()
+	stdout, err := p.cmd.StdoutPipe()
 	if err != nil {
 		p.ch <- PlayerErrorMsg(fmt.Errorf("error creating stdout pipe: %v", err))
 		return
@@ -164,6 +179,7 @@ func (p *Player) PlayCmd(video VideoInfo) {
 		}
 	}()
 
+	time.Sleep(500 * time.Millisecond)
 	go func() {
 		defer os.Remove(p.pipe)
 		err := p.cmd.Wait()
