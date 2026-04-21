@@ -87,8 +87,9 @@ type (
 )
 
 func generatePipe() string {
+	pid := os.Getpid()
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf(`\\.\pipe\mpvsocket_%d`, os.Getpid())
+		return fmt.Sprintf(`\\.\pipe\mpvsocket_%d`, pid)
 	}
 
 	return fmt.Sprintf("/tmp/mpvsocket_%d", os.Getpid())
@@ -116,6 +117,7 @@ func SearchYTCmd(query string, maxRes int) tea.Cmd {
 }
 
 func (p *Player) PlayCmd(video VideoInfo) {
+	fmt.Println(p.pipe)
 	if p.state != Stopped {
 		_ = p.Stop()
 	}
@@ -151,8 +153,13 @@ func (p *Player) PlayCmd(video VideoInfo) {
 	}
 
 	p.setState(Loading)
-
+	time.Sleep(500 * time.Millisecond)
 	go func() {
+		percentPos, err := p.GetPercentPos()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(percentPos)
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -179,7 +186,6 @@ func (p *Player) PlayCmd(video VideoInfo) {
 		}
 	}()
 
-	time.Sleep(500 * time.Millisecond)
 	go func() {
 		defer os.Remove(p.pipe)
 		err := p.cmd.Wait()

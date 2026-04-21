@@ -50,3 +50,17 @@ func (p *Player) sendCommand(command []string) (map[string]interface{}, error) {
 
 	return response, nil
 }
+
+func (p *Player) GetPercentPos() (int, error) {
+	response, err := p.sendCommand([]string{"get_property", "percent-pos"})
+	if err != nil {
+		return 0, err
+	}
+
+	percentPos, ok := response["data"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("invalid percent-pos response")
+	}
+
+	return int(percentPos), nil
+}
