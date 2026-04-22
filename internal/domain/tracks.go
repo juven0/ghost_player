@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"player/internal/ports"
 )
 
@@ -20,5 +21,9 @@ func (s *TrackService) Search(ctx context.Context, query string) ([]ports.Track,
 	if query == "" {
 		return nil, errors.New("empty query")
 	}
-	return s.searcher.Search(ctx, query)
+	tracks, err := s.searcher.Search(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error searching tracks: %w", err)
+	}
+	return tracks, nil
 }
