@@ -2,13 +2,12 @@ package ports
 
 import (
 	"context"
-	"player/internal/domain"
 )
 
 type Searcher interface {
-	Search(ctx context.Context, query string) ([]domain.Track, error)
+	Search(ctx context.Context, query string) ([]Track, error)
 }
 
 type StreamURLResolver interface {
-	Resolve(ctx context.Context, videoID string) (string, error)
+	Resolve(ctx context.Context, track Track) (string, error)
 }

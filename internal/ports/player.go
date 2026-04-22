@@ -14,6 +14,8 @@ type Player interface {
 	Seek(seconds float64, mode SeekMode) error
 	SetMute(mute bool) error
 	GetMute() (bool, error)
+	StartPlay(ctx context.Context, streamURL string) error
+	Close() error
 }
 
 type SeekMode string
