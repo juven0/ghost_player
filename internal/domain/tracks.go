@@ -9,6 +9,8 @@ import (
 
 type TrackService struct {
 	searcher ports.Searcher
+	resolver ports.StreamURLResolver
+	Traks    ports.Tracks
 }
 
 func NewTrack(searcher ports.Searcher) *TrackService {
@@ -26,4 +28,24 @@ func (s *TrackService) Search(ctx context.Context, query string) ([]ports.Track,
 		return nil, fmt.Errorf("error searching tracks: %w", err)
 	}
 	return tracks, nil
+}
+
+func (s *TrackService) ResolveStreamURL(ctx context.Context, track ports.Track, resolver ports.StreamURLResolver) (string, error) {
+	return resolver.Resolve(ctx, track)
+}
+
+func (s *TrackService) Like(track *ports.Track) ([]ports.Track, error) {
+	return s.Traks.Like(track)
+}
+
+func (s *TrackService) PPlaylist(playlistID string) ([]ports.Track, error) {
+	return s.Traks.PPlaylist(playlistID)
+}
+
+func (s *TrackService) NewPlaylist(name string, tracks []ports.Track) (string, error) {
+	return s.Traks.NewPlaylist(name, tracks)
+}
+
+func (s *TrackService) DeletePlaylist(playlistID string) error {
+	return s.Traks.DeletePlaylist(playlistID)
 }

@@ -22,3 +22,10 @@ const (
 	TrackSourceSpotify    TrackSource = "spotify"
 	TrackSourceLocal      TrackSource = "local"
 )
+
+type Tracks interface {
+	Like(track *Track) ([]Track, error)
+	PPlaylist(playlistID string) ([]Track, error)
+	NewPlaylist(name string, tracks []Track) (string, error)
+	DeletePlaylist(playlistID string) error
+}
