@@ -21,7 +21,7 @@ func NewPlayerService(player ports.Player, resolver ports.StreamURLResolver) *Pl
 }
 
 func (s *PlayerService) Play(context context.Context, track ports.Track) error {
-	streamURL, err := s.resolver.Resolve(context, track)
+	streamURL, err := s.resolver.Resolve(context, "")
 	if err != nil {
 		return fmt.Errorf("error to resolve stream url %s, %w", track.Title, err)
 	}

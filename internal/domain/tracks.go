@@ -8,14 +8,16 @@ import (
 )
 
 type TrackService struct {
-	searcher ports.Searcher
+	Platform ports.PlatformeInterface
 	resolver ports.StreamURLResolver
 	Traks    ports.Tracks
 }
 
-func NewTrack(searcher ports.Searcher) *TrackService {
+func NewTrack(platform ports.PlatformeInterface, resolver ports.StreamURLResolver, tracks ports.Tracks) *TrackService {
 	return &TrackService{
-		searcher: searcher,
+		Platform: platform,
+		resolver: resolver,
+		Traks:    tracks,
 	}
 }
 
@@ -23,15 +25,15 @@ func (s *TrackService) Search(ctx context.Context, query string) ([]ports.Track,
 	if query == "" {
 		return nil, errors.New("empty query")
 	}
-	tracks, err := s.searcher.Search(ctx, query)
+	tracks, err := s.Platform.Search(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("error searching tracks: %w", err)
 	}
 	return tracks, nil
 }
 
-func (s *TrackService) ResolveStreamURL(ctx context.Context, track ports.Track, resolver ports.StreamURLResolver) (string, error) {
-	return resolver.Resolve(ctx, track)
+func (s *TrackService) ResolveStreamURL(ctx context.Context, url string, resolver ports.StreamURLResolver) (string, error) {
+	return s.resolver.Resolve(ctx, url)
 }
 
 func (s *TrackService) Like(track *ports.Track) ([]ports.Track, error) {

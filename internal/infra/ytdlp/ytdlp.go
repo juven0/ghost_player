@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/lrstanley/go-ytdlp"
 )
 
 type Ytdlp struct{}
 
-func (yt Ytdlp) StreamURL(ctx context.Context, url string) (string, error) {
+func (yt Ytdlp) Resolve(ctx context.Context, url string) (string, error) {
 	result, err := ytdlp.New().
 		Format("bestaudio/best").
 		GetURL().
