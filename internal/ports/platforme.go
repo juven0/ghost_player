@@ -1,15 +1,13 @@
 package ports
 
-import "context"
-
-type Platfome struct {
+type Platforme struct {
 	Name      string
 	StreamUrl string
+	SearchURL string
+	Color     string
 }
 
 type PlatformeInterface interface {
-	Search(ctx context.Context, query string) ([]Track, error)
-	StreamUrlFormat(streamUlr, id string) (string)
+	FormatQuery(query string, max int) (string, error)
+	StreamUrlFormat(id string) string
 }
-
-

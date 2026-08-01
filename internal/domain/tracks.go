@@ -9,11 +9,11 @@ import (
 
 type TrackService struct {
 	Platform ports.PlatformeInterface
-	resolver ports.StreamURLResolver
+	resolver ports.StreamResolver
 	Traks    ports.Tracks
 }
 
-func NewTrack(platform ports.PlatformeInterface, resolver ports.StreamURLResolver, tracks ports.Tracks) *TrackService {
+func NewTrack(platform ports.PlatformeInterface, resolver ports.StreamResolver, tracks ports.Tracks) *TrackService {
 	return &TrackService{
 		Platform: platform,
 		resolver: resolver,
@@ -25,14 +25,14 @@ func (s *TrackService) Search(ctx context.Context, query string) ([]ports.Track,
 	if query == "" {
 		return nil, errors.New("empty query")
 	}
-	tracks, err := s.Platform.Search(ctx, query)
+	tracks, err := s.resolver.Search(ctx, query, 10)
 	if err != nil {
 		return nil, fmt.Errorf("error searching tracks: %w", err)
 	}
 	return tracks, nil
 }
 
-func (s *TrackService) ResolveStreamURL(ctx context.Context, url string, resolver ports.StreamURLResolver) (string, error) {
+func (s *TrackService) ResolveStreamURL(ctx context.Context, url string, resolver ports.StreamResolver) (string, error) {
 	return s.resolver.Resolve(ctx, url)
 }
 

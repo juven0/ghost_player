@@ -8,11 +8,11 @@ import (
 
 type PlayerService struct {
 	player   ports.Player
-	resolver ports.StreamURLResolver
+	resolver ports.StreamResolver
 	event    chan ports.PlayerEvent
 }
 
-func NewPlayerService(player ports.Player, resolver ports.StreamURLResolver) *PlayerService {
+func NewPlayerService(player ports.Player, resolver ports.StreamResolver) *PlayerService {
 	return &PlayerService{
 		player:   player,
 		resolver: resolver,
