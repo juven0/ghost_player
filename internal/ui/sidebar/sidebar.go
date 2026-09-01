@@ -1,6 +1,7 @@
 package sidebar
 
 import (
+	"player/internal/ports"
 	"player/internal/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -11,13 +12,11 @@ type platformItem struct {
 	name string
 }
 
-type platformSelectedMsg struct {
-	name string
+type PlatformSelectedMsg struct {
+	Name string
 }
 
 func (p platformItem) FilterValue() string { return p.name }
-
-var platforms = []platformItem{}
 
 type Model struct {
 	list    list.Model
@@ -26,12 +25,12 @@ type Model struct {
 	focused bool
 }
 
-func New() Model {
+func New(platforms []ports.Platforme) Model {
 	items := make([]platformItem, len(platforms))
 	for i, p := range platforms {
-		items[i] = platformItem{name: p.name}
+		items[i] = platformItem{name: p.Name}
 	}
-	l := list.New(platformsToItems(platforms), newPlatformDelegate(false), 0, 0)
+	l := list.New(platformsToItems(items), newPlatformDelegate(false), 0, 0)
 	l.Title = "Plateforme"
 	l.DisableQuitKeybindings()
 	l.SetShowStatusBar(false)
@@ -41,15 +40,22 @@ func New() Model {
 
 func (m Model) Init() tea.Cmd {
 	return func() tea.Msg {
-		return platformSelectedMsg{m.list.Items()[0].(platformItem).name}
+		if len(m.list.Items()) == 0 {
+			return nil
+		}
+		item := m.list.Items()[0].(platformItem)
+		return PlatformSelectedMsg{Name: item.name}
 	}
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if msg, ok := msg.(tea.KeyMsg); ok && msg.Type == tea.KeyEnter {
-		item := m.list.SelectedItem().(platformItem)
+		item, ok := m.list.SelectedItem().(platformItem)
+		if !ok {
+			return m, nil
+		}
 		return m, func() tea.Msg {
-			return platformSelectedMsg{name: item.name}
+			return PlatformSelectedMsg{Name: item.name}
 		}
 	}
 	var cmd tea.Cmd

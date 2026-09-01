@@ -36,7 +36,7 @@ func NewModel(deps Deps) *UIModel {
 		width:  80,
 		height: 24,
 	}
-	m.sidebar = sidebar.New()
+	m.sidebar = sidebar.New(deps.plateforms)
 	m.tracklist = tracklist.New(ctx, deps.track, deps.player)
 	m.footer = *footer.New()
 	return m
@@ -73,9 +73,9 @@ func (m *UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.footer.SetEvent(msg.event)
 		cmds = append(cmds, listenCmd(m.deps.player))
 
-	case platformSelectedMsg:
-		m.SetActivePlateform(msg.name)
-		m.tracklist.SetActivePlateform(msg.name)
+	case sidebar.PlatformSelectedMsg:
+		m.SetActivePlateform(msg.Name)
+		m.tracklist.SetActivePlateform(msg.Name)
 	}
 
 	var cmd tea.Cmd

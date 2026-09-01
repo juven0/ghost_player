@@ -8,7 +8,3 @@ import (
 type playerEventMsg struct {
 	event ports.PlayerEvent
 }
-
-type platformSelectedMsg struct {
-	name string
-}

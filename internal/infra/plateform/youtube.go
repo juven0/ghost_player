@@ -18,7 +18,7 @@ func NewYoutube() ItemPlateforme {
 }
 
 func (p *ItemPlateforme) StreamUrlFormat(id string) string {
-	return fmt.Sprintf("%s%s", p.Platforme.SearchURL, id)
+	return fmt.Sprintf("https://www.youtube.com/watch?v=%s", id)
 }
 
 func (p *ItemPlateforme) FormatQuery(query string, max int) (string, error) {
