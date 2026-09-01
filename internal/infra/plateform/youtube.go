@@ -10,8 +10,8 @@ type Youtube struct {
 	Platforme ports.Platforme
 }
 
-func NewYoutube() ports.PlatformeInterface {
-	return &Youtube{
+func NewYoutube() Youtube {
+	return Youtube{
 		Platforme: ports.Platforme{
 			Name:      "Youtube",
 			StreamUrl: "https://www.youtube.com/watch?v=",
@@ -26,5 +26,5 @@ func (p *Youtube) StreamUrlFormat(id string) string {
 }
 
 func (p *Youtube) FormatQuery(query string, max int) (string, error) {
-	return fmt.Sprintf("%s%d:%s", p.Platforme.SearchURL, max, query), nil
+	return fmt.Sprintf("ytsearch%d:%s", max, query), nil
 }

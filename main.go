@@ -28,7 +28,7 @@ func main() {
 	tracks := memory.NewTracks()
 
 	playerService := domain.NewPlayerService(player, resolver)
-	trackService := domain.NewTrack(platform, resolver, tracks)
+	trackService := domain.NewTrack(platform.Platforme, resolver, tracks)
 
 	deps := ui.NewDeps(playerService, trackService, nil)
 	m := ui.NewModel(deps)

@@ -1,6 +1,8 @@
 package sidebar
 
 import (
+	"player/internal/infra/plateform"
+
 	"player/internal/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -17,11 +19,7 @@ type platformSelectedMsg struct {
 
 func (p platformItem) FilterValue() string { return p.name }
 
-var platforms = []platformItem{
-	{name: "Youtube"},
-	{name: "Spotify"},
-	{name: "Deezer"},
-}
+var platforms = []platformItem{}
 
 type Model struct {
 	list    list.Model
@@ -31,6 +29,9 @@ type Model struct {
 }
 
 func New() Model {
+	for _, p := range plateform.Gostplatforme {
+		platforms = append(platforms, platformItem{name: p.Name})
+	}
 	l := list.New(platformsToItems(platforms), newPlatformDelegate(false), 0, 0)
 	l.Title = "Plateforme"
 	l.DisableQuitKeybindings()

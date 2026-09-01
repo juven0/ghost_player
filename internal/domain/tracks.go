@@ -8,12 +8,12 @@ import (
 )
 
 type TrackService struct {
-	Platform ports.PlatformeInterface
+	Platform ports.Platforme
 	resolver ports.StreamResolver
 	Traks    ports.Tracks
 }
 
-func NewTrack(platform ports.PlatformeInterface, resolver ports.StreamResolver, tracks ports.Tracks) *TrackService {
+func NewTrack(platform ports.Platforme, resolver ports.StreamResolver, tracks ports.Tracks) *TrackService {
 	return &TrackService{
 		Platform: platform,
 		resolver: resolver,
