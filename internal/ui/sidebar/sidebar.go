@@ -1,8 +1,6 @@
 package sidebar
 
 import (
-	"player/internal/infra/plateform"
-
 	"player/internal/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -29,8 +27,9 @@ type Model struct {
 }
 
 func New() Model {
-	for _, p := range plateform.Gostplatforme {
-		platforms = append(platforms, platformItem{name: p.Name})
+	items := make([]platformItem, len(platforms))
+	for i, p := range platforms {
+		items[i] = platformItem{name: p.name}
 	}
 	l := list.New(platformsToItems(platforms), newPlatformDelegate(false), 0, 0)
 	l.Title = "Plateforme"

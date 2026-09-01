@@ -11,11 +11,12 @@ import (
 )
 
 type UIModel struct {
-	deps        Deps
-	width       int
-	height      int
-	renderCount int
-	active      panel
+	deps            Deps
+	width           int
+	height          int
+	renderCount     int
+	active          panel
+	activePlateform string
 
 	sidebar   sidebar.Model
 	tracklist tracklist.Model
@@ -71,6 +72,10 @@ func (m *UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case playerEventMsg:
 		m.footer.SetEvent(msg.event)
 		cmds = append(cmds, listenCmd(m.deps.player))
+
+	case platformSelectedMsg:
+		m.SetActivePlateform(msg.name)
+		m.tracklist.SetActivePlateform(msg.name)
 	}
 
 	var cmd tea.Cmd
@@ -82,4 +87,8 @@ func (m *UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *UIModel) SetActivePlateform(name string) {
+	m.activePlateform = name
 }

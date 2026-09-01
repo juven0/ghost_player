@@ -4,28 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"player/internal/infra/plateform"
 	"player/internal/ports"
 )
 
 type TrackService struct {
-	Platform ports.Platforme
-	resolver ports.StreamResolver
-	Traks    ports.Tracks
+	Platforms []plateform.ItemPlateforme
+	resolver  ports.StreamResolver
+	Traks     ports.Tracks
 }
 
-func NewTrack(platform ports.Platforme, resolver ports.StreamResolver, tracks ports.Tracks) *TrackService {
+func NewTrack(platform []plateform.ItemPlateforme, resolver ports.StreamResolver, tracks ports.Tracks) *TrackService {
 	return &TrackService{
-		Platform: platform,
-		resolver: resolver,
-		Traks:    tracks,
+		Platforms: platform,
+		resolver:  resolver,
+		Traks:     tracks,
 	}
 }
 
-func (s *TrackService) Search(ctx context.Context, query string) ([]ports.Track, error) {
+func (s *TrackService) Search(ctx context.Context, query string, platformName string) ([]ports.Track, error) {
 	if query == "" {
 		return nil, errors.New("empty query")
 	}
-	tracks, err := s.resolver.Search(ctx, query, 10)
+
+	platform, err := s.getPlateformByName(platformName)
+	if err != nil {
+		return nil, fmt.Errorf("error finding platform: %w", err)
+	}
+
+	formattedQuery, err := platform.FormatQuery(query, 10)
+	if err != nil {
+		return nil, fmt.Errorf("error formatting query: %w", err)
+	}
+
+	tracks, err := s.resolver.Search(ctx, formattedQuery, 10)
 	if err != nil {
 		return nil, fmt.Errorf("error searching tracks: %w", err)
 	}
@@ -50,4 +62,16 @@ func (s *TrackService) NewPlaylist(name string, tracks []ports.Track) (string, e
 
 func (s *TrackService) DeletePlaylist(playlistID string) error {
 	return s.Traks.DeletePlaylist(playlistID)
+}
+
+func (s *TrackService) getPlateformByName(name string) (*plateform.ItemPlateforme, error) {
+	if name == "" {
+		return &s.Platforms[0], nil
+	}
+	for _, p := range s.Platforms {
+		if p.Platforme.Name == name {
+			return &p, nil
+		}
+	}
+	return nil, errors.New("platform not found")
 }

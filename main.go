@@ -10,6 +10,7 @@ import (
 	"player/internal/infra/mpv"
 	"player/internal/infra/plateform"
 	"player/internal/infra/ytdlp"
+	"player/internal/ports"
 	ui "player/internal/ui"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,13 +25,22 @@ func main() {
 	player := mpv.NewMpvPlayer(client, process)
 
 	resolver := ytdlp.NewYtdlp(ctx)
-	platform := plateform.NewYoutube()
+	youtube := plateform.NewYoutube()
 	tracks := memory.NewTracks()
 
-	playerService := domain.NewPlayerService(player, resolver)
-	trackService := domain.NewTrack(platform.Platforme, resolver, tracks)
+	var Gostplatforme = []plateform.ItemPlateforme{
+		youtube,
+	}
 
-	deps := ui.NewDeps(playerService, trackService, nil)
+	platforms := make([]ports.Platforme, len(Gostplatforme))
+	for i, p := range Gostplatforme {
+		platforms[i] = p.Platforme
+	}
+
+	playerService := domain.NewPlayerService(player, resolver)
+	trackService := domain.NewTrack(Gostplatforme, resolver, tracks)
+
+	deps := ui.NewDeps(playerService, trackService, nil, platforms)
 	m := ui.NewModel(deps)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 

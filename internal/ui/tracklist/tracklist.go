@@ -43,9 +43,9 @@ type playErrorMsg struct {
 
 type playStoppedMsg struct{}
 
-func searchCmd(ctx context.Context, track *domain.TrackService, query string) tea.Cmd {
+func searchCmd(ctx context.Context, track *domain.TrackService, query string, platformName string) tea.Cmd {
 	return func() tea.Msg {
-		tracks, err := track.Search(ctx, query)
+		tracks, err := track.Search(ctx, query, platformName)
 		return searchCompleteMsg{tracks: tracks, err: err}
 	}
 }
@@ -71,6 +71,7 @@ type Model struct {
 	isSearch  bool
 	isPlaying bool
 	currentID string
+	platform  string
 }
 
 func New(ctx context.Context, track *domain.TrackService, player *domain.PlayerService) Model {
@@ -88,7 +89,7 @@ func New(ctx context.Context, track *domain.TrackService, player *domain.PlayerS
 }
 
 func (m Model) Init() tea.Cmd {
-	return searchCmd(m.ctx, m.track, "shenseea")
+	return searchCmd(m.ctx, m.track, "shenseea", "")
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
@@ -137,7 +138,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.isSearch = false
 					m.msg = "🔍 Recherche en cours..."
 					m.input.SetValue("")
-					return m, searchCmd(m.ctx, m.track, q)
+					return m, searchCmd(m.ctx, m.track, q, m.platform)
 				}
 			case tea.KeyEsc:
 				m.isSearch = false
@@ -192,4 +193,8 @@ func (m Model) View() string {
 		view += "\n" + styles.AccentTextStyle.Render(m.msg)
 	}
 	return styles.AppStyle.Render(view)
+}
+
+func (m *Model) SetActivePlateform(name string) {
+	m.platform = name
 }

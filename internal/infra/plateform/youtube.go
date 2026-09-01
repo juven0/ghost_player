@@ -6,12 +6,8 @@ import (
 	"player/internal/ports"
 )
 
-type Youtube struct {
-	Platforme ports.Platforme
-}
-
-func NewYoutube() Youtube {
-	return Youtube{
+func NewYoutube() ItemPlateforme {
+	return ItemPlateforme{
 		Platforme: ports.Platforme{
 			Name:      "Youtube",
 			StreamUrl: "https://www.youtube.com/watch?v=",
@@ -21,10 +17,10 @@ func NewYoutube() Youtube {
 	}
 }
 
-func (p *Youtube) StreamUrlFormat(id string) string {
+func (p *ItemPlateforme) StreamUrlFormat(id string) string {
 	return fmt.Sprintf("%s%s", p.Platforme.SearchURL, id)
 }
 
-func (p *Youtube) FormatQuery(query string, max int) (string, error) {
+func (p *ItemPlateforme) FormatQuery(query string, max int) (string, error) {
 	return fmt.Sprintf("ytsearch%d:%s", max, query), nil
 }
