@@ -26,5 +26,5 @@ func (p *Youtube) StreamUrlFormat(id string) string {
 }
 
 func (p *Youtube) FormatQuery(query string, max int) (string, error) {
-	return fmt.Sprintf("%s%d:%s", p.Platforme.StreamUrl, max, query), nil
+	return fmt.Sprintf("%s%d:%s", p.Platforme.SearchURL, max, query), nil
 }

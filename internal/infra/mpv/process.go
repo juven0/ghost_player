@@ -28,13 +28,13 @@ func (p Process) PipePath() string {
 	return p.pipe
 }
 
-func (p *Process) Start(streaURL string) error {
+func (p *Process) Start(streamURL string) error {
 	p.cmd = exec.CommandContext(p.ctx, "mpv",
-		streaURL,
+		streamURL,
 		"--no-video",
-		"--ytdlp-format=bestaudio",
+		"--ytdl-format=bestaudio",
 		fmt.Sprintf("--input-ipc-server=%s", p.pipe),
-		"--idel=yes",
+		"--idle=yes",
 		"--keep-open=yes",
 	)
 
@@ -61,7 +61,7 @@ func (p *Process) Kill() error {
 func generatePipe() string {
 	pid := os.Getpid()
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf(`\\.pipe\mpvsocket_%d`, pid)
+		return fmt.Sprintf(`\\.\pipe\mpvsocket_%d`, pid)
 	}
 
 	return fmt.Sprintf("/tmp/mpvsocket_%d", pid)

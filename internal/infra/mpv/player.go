@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"player/internal/ports"
 )
@@ -30,7 +31,7 @@ func (m *MpvPlayer) Play() error {
 }
 
 func (m *MpvPlayer) Pause() error {
-	_, err := m.client.SendCommand([]string{"set_proterty", "pause", "true"})
+	_, err := m.client.SendCommand([]string{"set_property", "pause", "true"})
 	return err
 }
 
@@ -67,7 +68,7 @@ func (m *MpvPlayer) Seek(seconds float64, mode ports.SeekMode) error {
 }
 
 func (m *MpvPlayer) SetMute(mute bool) error {
-	_, err := m.client.SendCommand([]string{"set_property", "mute", fmt.Sprintf("%s", mute)})
+	_, err := m.client.SendCommand([]string{"set_property", "mute", strconv.FormatBool(mute)})
 	return err
 }
 

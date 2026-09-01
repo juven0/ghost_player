@@ -4,28 +4,37 @@ import (
 	"context"
 	"log"
 
+	"player/internal/domain"
 	"player/internal/infra/ipc"
+	"player/internal/infra/memory"
 	"player/internal/infra/mpv"
-	"player/tui"
+	"player/internal/infra/plateform"
+	"player/internal/infra/ytdlp"
+	ui "player/internal/ui"
 
 	tea "github.com/charmbracelet/bubbletea"
-	//	"github.com/lrstanley/go-ytdlp"
 )
 
 func main() {
-	// ytdlp.MustInstall(context.TODO(), nil)
-
 	ctx := context.Background()
+
 	transport := ipc.NewPipeWindows()
 	client := mpv.NewClient(transport)
 	process := mpv.NewProcess(ctx)
-	_ = mpv.NewMpvPlayer(client, process)
+	player := mpv.NewMpvPlayer(client, process)
 
-	m := tui.NewModel()
+	resolver := ytdlp.NewYtdlp(ctx)
+	platform := plateform.NewYoutube()
+	tracks := memory.NewTracks()
+
+	playerService := domain.NewPlayerService(player, resolver)
+	trackService := domain.NewTrack(platform, resolver, tracks)
+
+	deps := ui.NewDeps(playerService, trackService, nil)
+	m := ui.NewModel(deps)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
-	_, err := p.Run()
-	if err != nil {
+	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

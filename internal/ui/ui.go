@@ -1,12 +1,11 @@
 package ui
 
 import (
-	"context"
+	"player/internal/ui/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
-
-type deps struct{}
 
 type panel int
 
@@ -16,54 +15,30 @@ const (
 	panelFooter
 )
 
-type UIModel struct {
-	deps        deps
-	width       int
-	height      int
-	renderCount int
-	ctx         context.Context
-	active      panel
-}
-
-func NewModel(deps deps) UIModel {
-	m := UIModel{
-		deps: deps,
-	}
-	m.active = panelTracklist
-	m.width = 80
-	m.height = 24
-	return m
-}
-
-func (m UIModel) Init() tea.Cmd {
-	return tea.Batch()
-}
-
-func (m *UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC:
-			return m, tea.Quit
-		case tea.KeyLeft, tea.KeyRight:
-			m.toggelPannel(msg)
-		}
-	}
-
-	return m, tea.Batch(cmds...)
-}
+var (
+	sidebarWidth = 25
+	footerHeight = 2
+)
 
 func (m *UIModel) View() string {
-	return ""
+	bodyHeight := m.height - footerHeight - 4
+	if bodyHeight < 15 {
+		bodyHeight = 15
+	}
+
+	body := styles.TrackBoxStyle.
+		Width(m.width - 2).
+		Height(bodyHeight).
+		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidebar.View(), m.tracklist.View()))
+
+	return lipgloss.JoinVertical(lipgloss.Left, body, m.footer.View())
 }
 
-func (m *UIModel) toggelPannel(t tea.Msg) {
-	if t == tea.KeyRight {
+func (m *UIModel) toggelPannel(k tea.KeyType) {
+	if k == tea.KeyRight {
 		m.active = (m.active + 1) % 3
 	}
-	if t == tea.KeyLeft {
+	if k == tea.KeyLeft {
 		if m.active > 0 {
 			m.active--
 		} else {
@@ -73,4 +48,15 @@ func (m *UIModel) toggelPannel(t tea.Msg) {
 }
 
 func (m *UIModel) updateSize() {
+	contentWidth := m.width - sidebarWidth - 4
+	contentHeight := m.height - footerHeight - 6
+	bodyHeight := m.height - footerHeight - 4
+
+	if bodyHeight < 15 {
+		bodyHeight = 15
+	}
+
+	m.footer.SetSize(m.width-2, footerHeight)
+	m.sidebar.SetSize(sidebarWidth, contentHeight)
+	m.tracklist.SetSize(contentWidth, bodyHeight)
 }

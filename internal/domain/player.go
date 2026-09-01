@@ -7,26 +7,30 @@ import (
 )
 
 type PlayerService struct {
-	player   ports.Player
-	resolver ports.StreamResolver
-	event    chan ports.PlayerEvent
+	Player   ports.Player
+	Resolver ports.StreamResolver
+	Event    chan ports.PlayerEvent
 }
 
 func NewPlayerService(player ports.Player, resolver ports.StreamResolver) *PlayerService {
 	return &PlayerService{
-		player:   player,
-		resolver: resolver,
-		event:    make(chan ports.PlayerEvent),
+		Player:   player,
+		Resolver: resolver,
+		Event:    make(chan ports.PlayerEvent),
 	}
 }
 
+func (s *PlayerService) EventChan() <-chan ports.PlayerEvent {
+	return s.Event
+}
+
 func (s *PlayerService) Play(context context.Context, track ports.Track) error {
-	streamURL, err := s.resolver.Resolve(context, "")
+	streamURL, err := s.Resolver.Resolve(context, "")
 	if err != nil {
 		return fmt.Errorf("error to resolve stream url %s, %w", track.Title, err)
 	}
 
-	if err := s.player.StartPlay(context, streamURL); err != nil {
+	if err := s.Player.StartPlay(context, streamURL); err != nil {
 		return fmt.Errorf("error to play track %s, %w", track.Title, err)
 	}
 
@@ -35,37 +39,37 @@ func (s *PlayerService) Play(context context.Context, track ports.Track) error {
 }
 
 func (s *PlayerService) Pause() error {
-	return s.player.Pause()
+	return s.Player.Pause()
 }
 
 func (s *PlayerService) Resume() error {
-	return s.player.Resume()
+	return s.Player.Resume()
 }
 
 func (s *PlayerService) Stop() error {
-	return s.player.Stop()
+	return s.Player.Stop()
 }
 
 func (s *PlayerService) SetVolume(volume int) error {
-	return s.player.SetVolume(volume)
+	return s.Player.SetVolume(volume)
 }
 
 func (s *PlayerService) GetVolume() (int, error) {
-	return s.player.GetVolume()
+	return s.Player.GetVolume()
 }
 
 func (s *PlayerService) Seek(seconds float64, mode ports.SeekMode) error {
-	return s.player.Seek(seconds, mode)
+	return s.Player.Seek(seconds, mode)
 }
 
 func (s *PlayerService) SetMute(mute bool) error {
-	return s.player.SetMute(mute)
+	return s.Player.SetMute(mute)
 }
 
 func (s *PlayerService) GetMute() (bool, error) {
-	return s.player.GetMute()
+	return s.Player.GetMute()
 }
 
 func (s *PlayerService) Close() error {
-	return s.player.Close()
+	return s.Player.Close()
 }
