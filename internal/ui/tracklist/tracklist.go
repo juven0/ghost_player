@@ -50,9 +50,9 @@ func searchCmd(ctx context.Context, track *domain.TrackService, query string, pl
 	}
 }
 
-func playCmd(ctx context.Context, player *domain.PlayerService, track ports.Track) tea.Cmd {
+func playCmd(ctx context.Context, player *domain.PlayerService, track ports.Track, platformName string) tea.Cmd {
 	return func() tea.Msg {
-		if err := player.Play(ctx, track); err != nil {
+		if err := player.Play(ctx, track, platformName); err != nil {
 			return playErrorMsg{err: err}
 		}
 		return playStartedMsg{track: track}
@@ -151,7 +151,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			if item, ok := m.list.SelectedItem().(trackItem); ok {
-				return m, playCmd(m.ctx, m.player, item.track)
+				return m, playCmd(m.ctx, m.player, item.track, m.platform)
 			}
 		}
 		if key.Matches(msg, searchKey) {

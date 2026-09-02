@@ -3,20 +3,23 @@ package domain
 import (
 	"context"
 	"fmt"
+	"player/internal/infra/plateform"
 	"player/internal/ports"
 )
 
 type PlayerService struct {
-	Player   ports.Player
-	Resolver ports.StreamResolver
-	Event    chan ports.PlayerEvent
+	Player    ports.Player
+	Resolver  ports.StreamResolver
+	Event     chan ports.PlayerEvent
+	Platforms []plateform.ItemPlateforme
 }
 
-func NewPlayerService(player ports.Player, resolver ports.StreamResolver) *PlayerService {
+func NewPlayerService(player ports.Player, resolver ports.StreamResolver, platforms []plateform.ItemPlateforme) *PlayerService {
 	return &PlayerService{
-		Player:   player,
-		Resolver: resolver,
-		Event:    make(chan ports.PlayerEvent),
+		Player:    player,
+		Resolver:  resolver,
+		Event:     make(chan ports.PlayerEvent),
+		Platforms: platforms,
 	}
 }
 
@@ -24,8 +27,13 @@ func (s *PlayerService) EventChan() <-chan ports.PlayerEvent {
 	return s.Event
 }
 
-func (s *PlayerService) Play(context context.Context, track ports.Track) error {
-	streamURL, err := s.Resolver.Resolve(context, "")
+func (s *PlayerService) Play(context context.Context, track ports.Track, platformName string) error {
+	platform, err := getPlateformByName(platformName, s.Platforms)
+	if err != nil {
+		return fmt.Errorf("error resolving platform: %w", err)
+	}
+
+	streamURL, err := s.Resolver.Resolve(context, platform.StreamUrlFormat(track.ID))
 	if err != nil {
 		return fmt.Errorf("error to resolve stream url %s, %w", track.Title, err)
 	}

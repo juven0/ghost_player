@@ -25,11 +25,14 @@ func main() {
 	player := mpv.NewMpvPlayer(client, process)
 
 	resolver := ytdlp.NewYtdlp(ctx)
-	youtube := plateform.NewYoutube()
 	tracks := memory.NewTracks()
 
+	// youtube := plateform.NewYoutube()
+	spotify := plateform.NewSpotify()
+
 	var Gostplatforme = []plateform.ItemPlateforme{
-		youtube,
+		// youtube,
+		spotify,
 	}
 
 	platforms := make([]ports.Platforme, len(Gostplatforme))
@@ -37,7 +40,7 @@ func main() {
 		platforms[i] = p.Platforme
 	}
 
-	playerService := domain.NewPlayerService(player, resolver)
+	playerService := domain.NewPlayerService(player, resolver, Gostplatforme)
 	trackService := domain.NewTrack(Gostplatforme, resolver, tracks)
 
 	deps := ui.NewDeps(playerService, trackService, nil, platforms)

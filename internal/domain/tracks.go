@@ -27,7 +27,7 @@ func (s *TrackService) Search(ctx context.Context, query string, platformName st
 		return nil, errors.New("empty query")
 	}
 
-	platform, err := s.getPlateformByName(platformName)
+	platform, err := getPlateformByName(platformName, s.Platforms)
 	if err != nil {
 		return nil, fmt.Errorf("error finding platform: %w", err)
 	}
@@ -64,11 +64,11 @@ func (s *TrackService) DeletePlaylist(playlistID string) error {
 	return s.Traks.DeletePlaylist(playlistID)
 }
 
-func (s *TrackService) getPlateformByName(name string) (*plateform.ItemPlateforme, error) {
+func getPlateformByName(name string, platforms []plateform.ItemPlateforme) (*plateform.ItemPlateforme, error) {
 	if name == "" {
-		return &s.Platforms[0], nil
+		return &platforms[0], nil
 	}
-	for _, p := range s.Platforms {
+	for _, p := range platforms {
 		if p.Platforme.Name == name {
 			return &p, nil
 		}
