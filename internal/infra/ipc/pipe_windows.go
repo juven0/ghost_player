@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/Microsoft/go-winio"
 )
@@ -20,14 +21,23 @@ func NewPipeWindows() IPCTransport {
 }
 
 func (p *PipeWindows) Connect(ctx context.Context, pipePath string) error {
-	conn, err := winio.DialPipe(pipePath, nil)
-	if err != nil {
-		return fmt.Errorf("faild to connect to pipe: %w", err)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var err error
+	for {
+		conn, dialErr := winio.DialPipeContext(ctx, pipePath)
+		if dialErr == nil {
+			p.conn = conn
+			return nil
+		}
+		err = dialErr
+		if ctx.Err() != nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
-
-	p.conn = conn
-
-	return nil
+	return fmt.Errorf("faild to connect to pipe: %w", err)
 }
 
 func (p *PipeWindows) Send(data []byte) ([]byte, error) {
