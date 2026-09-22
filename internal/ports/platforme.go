@@ -9,5 +9,6 @@ type Platforme struct {
 
 type PlatformeInterface interface {
 	FormatQuery(query string, max int) (string, error)
-	StreamUrlFormat(id string) string
+	StreamUrlFormat(track Track) string
+	TrackMaping(data map[string]interface{}) (Track, error)
 }

@@ -27,12 +27,14 @@ func main() {
 	resolver := ytdlp.NewYtdlp(ctx)
 	tracks := memory.NewTracks()
 
-	// youtube := plateform.NewYoutube()
-	spotify := plateform.NewSpotify()
+	youtube := plateform.NewYoutube()
+	// spotify := plateform.NewSpotify()
+	souncloud := plateform.NewSounCloud()
 
 	var Gostplatforme = []plateform.ItemPlateforme{
-		// youtube,
-		spotify,
+		youtube,
+		// spotify,
+		souncloud,
 	}
 
 	platforms := make([]ports.Platforme, len(Gostplatforme))

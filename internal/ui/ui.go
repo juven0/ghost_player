@@ -15,23 +15,14 @@ const (
 	panelFooter
 )
 
-var (
+const (
 	sidebarWidth = 25
-	footerHeight = 2
+	footerHeight = 1
 )
 
 func (m *UIModel) View() string {
-	bodyHeight := m.height - footerHeight - 4
-	if bodyHeight < 15 {
-		bodyHeight = 15
-	}
-
-	body := styles.TrackBoxStyle.
-		Width(m.width - 2).
-		Height(bodyHeight).
-		Render(lipgloss.JoinHorizontal(lipgloss.Left, m.sidebar.View(), m.tracklist.View()))
-
-	return lipgloss.JoinVertical(lipgloss.Left, body, m.footer.View())
+	body := lipgloss.JoinHorizontal(lipgloss.Top, m.sidebar.View(), m.tracklist.View())
+	return lipgloss.JoinVertical(lipgloss.Top, body, m.footer.View())
 }
 
 func (m *UIModel) toggelPannel(k tea.KeyType) {
@@ -48,15 +39,14 @@ func (m *UIModel) toggelPannel(k tea.KeyType) {
 }
 
 func (m *UIModel) updateSize() {
-	contentWidth := m.width - sidebarWidth - 4
-	contentHeight := m.height - footerHeight - 6
-	bodyHeight := m.height - footerHeight - 4
+	_, frameY := styles.PanelFrameSize()
 
-	if bodyHeight < 15 {
-		bodyHeight = 15
+	bodyHeight := m.height - footerHeight
+	if bodyHeight < 4+frameY {
+		bodyHeight = 4 + frameY
 	}
 
-	m.footer.SetSize(m.width-2, footerHeight)
-	m.sidebar.SetSize(sidebarWidth, contentHeight)
-	m.tracklist.SetSize(contentWidth, bodyHeight)
+	m.footer.SetSize(m.width, footerHeight)
+	m.sidebar.SetSize(sidebarWidth, bodyHeight)
+	m.tracklist.SetSize(m.width-sidebarWidth, bodyHeight)
 }

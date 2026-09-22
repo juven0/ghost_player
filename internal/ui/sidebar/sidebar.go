@@ -64,17 +64,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	style := styles.FocusedStyle
+	style := styles.PanelFocusedStyle
 	if !m.focused {
-		style = styles.MutedPanelStyle
+		style = styles.PanelStyle
 	}
-	return style.Width(m.width).Height(m.height).Render(m.list.View())
+	return style.Width(m.width).Height(m.height - 5).Render(m.list.View())
 }
 
 func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	m.list.SetSize(width, height-6)
+
+	frameX, frameY := styles.PanelFrameSize()
+	m.list.SetSize(width-frameX-4, height-frameY-5)
 }
 
 func platformsToItems(in []platformItem) []list.Item {

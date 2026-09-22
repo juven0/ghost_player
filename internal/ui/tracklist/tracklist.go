@@ -96,9 +96,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, msg.Height)
-
 	case searchCompleteMsg:
 		if msg.err != nil {
 			m.msg = fmt.Sprintf("❌ Erreur de recherche: %v", msg.err)
@@ -165,34 +162,35 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	return m, cmd
 }
 
+const msgLines = 2
+
 func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	listHeight := height - 5
-	if listHeight < 10 {
-		listHeight = 10
+
+	frameX, frameY := styles.PanelFrameSize()
+	listHeight := height - frameY - msgLines
+	if listHeight < 3 {
+		listHeight = 3
 	}
-	m.list.SetSize(width, listHeight)
+	m.list.SetSize(width-frameX, listHeight-5)
 }
 
 func (m Model) View() string {
-	var view string
+	var content string
 
 	if m.isSearch {
-		view = "🔍 Rechercher sur YouTube:\n\n"
-		view += m.input.View()
-		view += "\n\n(Enter pour rechercher, Esc pour annuler)"
-		if m.height > 0 {
-			view = styles.AppStyle.Height(m.height).MaxHeight(m.height).Render(view)
-		}
-		return view
+		content = "🔍 Rechercher sur YouTube:\n\n"
+		content += m.input.View()
+		content += "\n\n(Enter pour rechercher, Esc pour annuler)"
+		return styles.PanelStyle.Width(m.width).Height(m.height - 4).Render(content)
 	}
 
-	view = m.list.View()
+	content = m.list.View()
 	if m.msg != "" {
-		view += "\n" + styles.AccentTextStyle.Render(m.msg)
+		content += "\n" + styles.AccentTextStyle.Render(m.msg)
 	}
-	return styles.AppStyle.Render(view)
+	return styles.PanelStyle.Width(m.width - 4).Height(m.height - 4).Render(content)
 }
 
 func (m *Model) SetActivePlateform(name string) {

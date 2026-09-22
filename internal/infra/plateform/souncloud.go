@@ -6,35 +6,35 @@ import (
 	"player/internal/ports"
 )
 
-type Youtube struct {
+type SounCloud struct {
 	Platforme ports.Platforme
 }
 
-func NewYoutube() ItemPlateforme {
+func NewSounCloud() ItemPlateforme {
 	return ItemPlateforme{
 		Platforme: ports.Platforme{
-			Name:      "Youtube",
-			StreamUrl: "https://www.youtube.com/watch?v=",
-			SearchURL: "ytsearch",
+			Name:      "SounCloud",
+			StreamUrl: "https://www.souncloud.com/",
+			SearchURL: "scsearch10:",
 			Color:     "DEFAULT",
 		},
-		Platformer: &Youtube{},
+		Platformer: &SounCloud{},
 	}
 }
 
-func (p *Youtube) StreamUrlFormat(track ports.Track) string {
-	return fmt.Sprintf("https://www.youtube.com/watch?v=%s", track.ID)
+func (p *SounCloud) StreamUrlFormat(track ports.Track) string {
+	return track.SourceURL
 }
 
-func (p *Youtube) FormatQuery(query string, max int) (string, error) {
-	return fmt.Sprintf("ytsearch%d:%s", max, query), nil
+func (p *SounCloud) FormatQuery(query string, max int) (string, error) {
+	return fmt.Sprintf("scsearch10:%s", query), nil
 }
 
-func (p *Youtube) TrackMaping(data map[string]interface{}) (ports.Track, error) {
+func (p *SounCloud) TrackMaping(data map[string]interface{}) (ports.Track, error) {
 	return ports.Track{
 		ID:         getString(data, "id"),
 		Title:      getString(data, "title"),
-		Source:     ports.TrackSourceSpotify,
+		Source:     ports.TrackSourceSoundCloud,
 		Duration:   getFloat64(data, "duration"),
 		Uploader:   getString(data, "uploader"),
 		SourceURL:  getString(data, "webpage_url"),

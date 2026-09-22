@@ -10,6 +10,7 @@ var (
 	ActiveTextColor   = lipgloss.Color("#EEE")
 	NormalTextColor   = lipgloss.Color("#CCC")
 	InactiveTextColor = lipgloss.Color("#888")
+	BorderMutedColor  = lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"}
 )
 
 var (
@@ -21,21 +22,31 @@ var (
 
 var AccentTextStyle = lipgloss.NewStyle().Foreground(AccentColor)
 
-var MutedPanelStyle = FocusedStyle.
-	BorderForeground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
+// PanelStyle est le cadre uniforme de tous les panneaux (sidebar, tracklist,
+// footer). Padding(0,1) + bordure arrondie => frame (x=4, y=2).
+var (
+	PanelStyle = lipgloss.NewStyle().
+			Padding(0, 1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(BorderMutedColor)
+
+	PanelFocusedStyle = lipgloss.NewStyle().
+				Padding(0, 1).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(AccentColor)
+)
+
+// PanelFrameSize retourne la taille du cadre (horizontal, vertical) compris
+// dans Width/Height, i.e. la part à soustraire pour obtenir le contenu.
+func PanelFrameSize() (x, y int) {
+	return PanelStyle.GetFrameSize()
+}
 
 var (
-	ColumnStyle  = lipgloss.NewStyle().Padding(1, 2)
-	FocusedStyle = lipgloss.NewStyle().
-			Padding(1, 2).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(AccentColor))
 	TrackListStyle = lipgloss.NewStyle().
-			Padding(1, 2).
-			MarginTop(0)
+			Padding(0, 1)
 	TrackListActiveStyle = lipgloss.NewStyle().
 				Padding(0, 1).
-				MarginTop(0).
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(AccentColor)
 	TrackTitleStyle = lipgloss.NewStyle().
@@ -44,30 +55,10 @@ var (
 )
 
 var (
-	ButtonStyle = lipgloss.NewStyle().
-			Foreground(NormalTextColor).
-			Background(InactiveTextColor).
-			Padding(0, 3).
-			MarginTop(1)
-	ActiveButtonStyle = ButtonStyle.
-				Foreground(InactiveTextColor).
-				Background(AccentColor)
-)
-
-var (
-	TrackBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#444")).
-			Padding(0, 1)
 	TrackVersionStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#999999"))
 	TrackArtistStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#dcdcdc"))
-
-	TrackProgressStyle = lipgloss.NewStyle().
-				PaddingLeft(2).
-				PaddingBottom(1)
-
 	TrackAddInfoStyle = lipgloss.NewStyle().
 				Align(lipgloss.Right).
 				Width(26)
@@ -80,5 +71,4 @@ var (
 	TitleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFDF5")).
 			Background(lipgloss.Color("#25A065"))
-	AppStyle = lipgloss.NewStyle().Padding(1, 1)
 )

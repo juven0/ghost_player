@@ -33,7 +33,7 @@ func (s *PlayerService) Play(context context.Context, track ports.Track, platfor
 		return fmt.Errorf("error resolving platform: %w", err)
 	}
 
-	streamURL, err := s.Resolver.Resolve(context, platform.StreamUrlFormat(track.ID))
+	streamURL, err := s.Resolver.Resolve(context, platform.StreamUrlFormat(track))
 	if err != nil {
 		return fmt.Errorf("error to resolve stream url %s, %w", track.Title, err)
 	}

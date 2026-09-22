@@ -7,7 +7,11 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
+
+// playButtonReserve est la largeur du bouton play (3) plus son séparateur (1).
+const playButtonReserve = 4
 
 type Model struct {
 	spinner       spinner.Model
@@ -46,7 +50,8 @@ func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
 
-	progressWidth := width - 13
+	frameX, _ := styles.PanelFrameSize()
+	progressWidth := width - frameX - playButtonReserve
 	if progressWidth > 0 {
 		m.progress.Width = progressWidth
 	}
@@ -66,17 +71,18 @@ func (m *Model) handleEvent(ev ports.PlayerEvent) {
 }
 
 func (m Model) View() string {
-	playButton := styles.ActiveButtonStyle.Padding(0, 1).Margin(0).Render(styles.IconPlay)
+	playButtonStyle := lipgloss.NewStyle().
+		Background(styles.AccentColor).
+		Foreground(styles.ActiveTextColor).
+		Padding(0, 1)
+	playButton := playButtonStyle.Render(styles.IconPlay)
 
-	style := styles.MutedPanelStyle.
-		Padding(0, 1).
-		Width(m.width).
-		Height(m.height)
-	return style.
-		Render(
-			playButton,
-			styles.TrackProgressStyle.Width(m.width).Render(
-				m.progress.ViewAs(m.progressValue),
-			),
-		)
+	content := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		playButton,
+		" ",
+		m.progress.ViewAs(m.progressValue),
+	)
+
+	return styles.PanelStyle.Width(m.width - 2).Height(m.height).Render(content)
 }

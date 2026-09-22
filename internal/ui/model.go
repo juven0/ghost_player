@@ -34,7 +34,7 @@ func NewModel(deps Deps) *UIModel {
 		ctx:    ctx,
 		active: panelTracklist,
 		width:  80,
-		height: 24,
+		height: 20,
 	}
 	m.sidebar = sidebar.New(deps.plateforms)
 	m.tracklist = tracklist.New(ctx, deps.track, deps.player)
