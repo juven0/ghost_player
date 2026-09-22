@@ -1,10 +1,12 @@
 package mpv
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 )
 
@@ -38,9 +40,30 @@ func (p *Process) Start(streamURL string) error {
 		"--keep-open=yes",
 	)
 
+	stdout, err := p.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+
 	if err := p.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start mpv: %w", err)
 	}
+	regexProgress := regexp.MustCompile(`(\d{2}:\d{2}:\d{2})\s*/\s*(\d{2}:\d{2}:\d{2})\s*\((\d+)%\)`)
+
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if matches := regexProgress.FindStringSubmatch(line); matches != nil {
+				if len(matches) == 4 {
+					currentTime := matches[1]
+					totalTime := matches[2]
+					percentage := matches[3]
+					fmt.Printf("Progress: %s / %s (%s%%)\n", currentTime, totalTime, percentage)
+				}
+			}
+		}
+	}()
 
 	return nil
 }
